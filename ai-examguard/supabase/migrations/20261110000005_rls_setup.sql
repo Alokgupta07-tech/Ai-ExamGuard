@@ -13,7 +13,7 @@ RETURNS public.user_role
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
   SELECT role
   FROM public.memberships
@@ -28,7 +28,7 @@ RETURNS BOOLEAN
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
   SELECT EXISTS (
     SELECT 1
@@ -44,7 +44,7 @@ RETURNS BOOLEAN
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
   SELECT EXISTS (
     SELECT 1
@@ -61,7 +61,7 @@ RETURNS BOOLEAN
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
   SELECT EXISTS (
     SELECT 1
@@ -78,7 +78,7 @@ RETURNS BOOLEAN
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
   SELECT EXISTS (
     SELECT 1
@@ -94,7 +94,7 @@ RETURNS BOOLEAN
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
   SELECT EXISTS (
     SELECT 1
@@ -110,7 +110,7 @@ RETURNS UUID
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
   SELECT tenant_id
   FROM public.courses
@@ -123,7 +123,7 @@ RETURNS UUID
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
   SELECT tenant_id
   FROM public.exams
@@ -136,7 +136,7 @@ RETURNS BOOLEAN
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
   SELECT EXISTS (
     SELECT 1
