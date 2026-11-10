@@ -108,18 +108,14 @@ CREATE INDEX idx_proctor_events_session ON public.proctor_events(session_id, cre
 CREATE INDEX idx_proctor_events_tenant ON public.proctor_events(tenant_id);
 CREATE INDEX idx_proctor_events_severity ON public.proctor_events(severity);
 CREATE INDEX idx_proctor_events_type ON public.proctor_events(event_type);
-
--- Deduplication: Prevent duplicate events within 2 seconds
--- Using extract(epoch) which is immutable, then rounding to nearest second
-CREATE UNIQUE INDEX idx_proctor_events_dedup ON public.proctor_events(
-    session_id, 
-    event_type, 
-    (FLOOR(EXTRACT(EPOCH FROM created_at)))
-);
+CREATE INDEX idx_proctor_events_created ON public.proctor_events(created_at);
 
 COMMENT ON TABLE public.proctor_events IS 'AI-generated proctoring anomaly events';
 COMMENT ON COLUMN public.proctor_events.confidence IS 'AI model confidence score (0.000 to 1.000)';
 COMMENT ON COLUMN public.proctor_events.details IS 'Event metadata (duration, coordinates, etc.)';
+
+-- Note: Deduplication will be handled at application level due to PostgreSQL limitations
+-- with immutable functions in unique indexes on TIMESTAMPTZ columns
 
 -- ==============================================
 -- 14. EVIDENCE_ASSETS
