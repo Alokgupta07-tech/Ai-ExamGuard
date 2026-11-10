@@ -138,11 +138,21 @@ EXECUTE FUNCTION private.update_trust_score_on_violation();
 COMMENT ON TRIGGER proctor_event_update_trust_score ON public.proctor_events IS 'Auto-update trust score and create review case when violations occur';
 
 -- ==============================================
--- PROFILE CREATION TRIGGER
+-- PROFILE CREATION FUNCTION
 -- ==============================================
+-- Note: This function should be called from your application after user signup
+-- Supabase does not allow triggers on auth.users table
+-- 
+-- Usage in your signup code:
+-- SELECT private.handle_new_user_profile('<user_id>', '<email>', '<full_name>', '<avatar_url>');
 
-CREATE OR REPLACE FUNCTION private.handle_new_user()
-RETURNS TRIGGER
+CREATE OR REPLACE FUNCTION private.handle_new_user_profile(
+  user_id UUID,
+  user_email TEXT,
+  user_full_name TEXT DEFAULT NULL,
+  user_avatar_url TEXT DEFAULT NULL
+)
+RETURNS UUID
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, pg_temp
@@ -150,22 +160,18 @@ AS $$
 BEGIN
   INSERT INTO public.profiles (id, email, full_name, avatar_url)
   VALUES (
-    NEW.id,
-    NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(NEW.email, '@', 1)),
-    NEW.raw_user_meta_data->>'avatar_url'
-  );
-  RETURN NEW;
+    user_id,
+    user_email,
+    COALESCE(user_full_name, split_part(user_email, '@', 1)),
+    user_avatar_url
+  )
+  ON CONFLICT (id) DO NOTHING;
+  
+  RETURN user_id;
 END;
 $$;
 
--- Trigger on auth.users insert
-CREATE TRIGGER on_auth_user_created
-AFTER INSERT ON auth.users
-FOR EACH ROW
-EXECUTE FUNCTION private.handle_new_user();
-
-COMMENT ON TRIGGER on_auth_user_created ON auth.users IS 'Auto-create profile when new user signs up';
+COMMENT ON FUNCTION private.handle_new_user_profile IS 'Create profile for new user - call from application after signup';
 
 -- ==============================================
 -- AUDIT LOG HELPER FUNCTION
