@@ -110,14 +110,11 @@ CREATE INDEX idx_proctor_events_severity ON public.proctor_events(severity);
 CREATE INDEX idx_proctor_events_type ON public.proctor_events(event_type);
 
 -- Deduplication: Prevent duplicate events within 2 seconds
--- Note: We add a computed column for deduplication instead of using date_trunc in index
-ALTER TABLE public.proctor_events 
-ADD COLUMN created_at_second TIMESTAMPTZ GENERATED ALWAYS AS (date_trunc('second', created_at)) STORED;
-
+-- Using extract(epoch) which is immutable, then rounding to nearest second
 CREATE UNIQUE INDEX idx_proctor_events_dedup ON public.proctor_events(
     session_id, 
     event_type, 
-    created_at_second
+    (FLOOR(EXTRACT(EPOCH FROM created_at)))
 );
 
 COMMENT ON TABLE public.proctor_events IS 'AI-generated proctoring anomaly events';
