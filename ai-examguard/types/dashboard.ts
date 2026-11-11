@@ -10,6 +10,13 @@ import type {
   TenantSettings,
   UserRole,
 } from './database';
+import type {
+  EventOrigin,
+  EventReviewStatus,
+  EventSourceModule,
+  RiskCategory,
+  SessionRiskAssessment,
+} from './proctoring';
 
 export interface ProfileSummary {
   id: string;
@@ -69,6 +76,17 @@ export interface QuestionView {
   createdAt: string;
 }
 
+export interface ReviewActionHistoryEntry {
+  id: string;
+  reviewCaseId: string;
+  sessionId: string;
+  reviewerId: string;
+  reviewerName: string;
+  actionType: ReviewActionType;
+  message: string | null;
+  createdAt: string;
+}
+
 export interface SessionView {
   id: string;
   examId: string;
@@ -80,8 +98,15 @@ export interface SessionView {
   status: SessionStatus;
   startedAt: string | null;
   submittedAt: string | null;
+  durationMinutes?: number;
+  endTime?: string | null;
+  answeredCount?: number;
+  totalQuestionCount?: number;
   score: number | null;
   trustScore: number;
+  riskCategory: RiskCategory;
+  riskScore: number;
+  riskAssessment?: SessionRiskAssessment;
   hardwareStatus: {
     camera?: boolean;
     microphone?: boolean;
@@ -92,12 +117,26 @@ export interface SessionView {
 
 export interface ProctorEventView {
   id: string;
+  clientEventId: string | null;
+  universityId: string;
+  examId: string;
   sessionId: string;
   examTitle: string;
   studentName: string;
   eventType: EventType;
+  sourceModule: EventSourceModule;
+  eventOrigin: EventOrigin;
+  isSimulated: boolean;
   severity: EventSeverity;
   confidence: number | null;
+  occurredAt: string;
+  durationMs: number | null;
+  modelVersion: string | null;
+  explanation: string;
+  reviewStatus: EventReviewStatus;
+  reviewNote?: string | null;
+  reviewedAt?: string | null;
+  reviewedBy?: string | null;
   details: Record<string, unknown>;
   createdAt: string;
 }
@@ -113,6 +152,9 @@ export interface ReviewCaseView {
   status: ReviewStatus;
   priority: number;
   trustScore: number;
+  riskCategory: RiskCategory;
+  riskScore: number;
+  riskAssessment?: SessionRiskAssessment;
   summary: string | null;
   assignedTo: string | null;
   createdAt: string;
@@ -236,6 +278,7 @@ export interface InvigilatorDashboardPayload {
   sessions: SessionView[];
   proctorEvents: ProctorEventView[];
   reviewCases: ReviewCaseView[];
+  reviewActions: ReviewActionHistoryEntry[];
 }
 
 export interface CreateCourseInput {

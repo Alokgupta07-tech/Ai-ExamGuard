@@ -145,6 +145,81 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Phase 13: Lightweight Cybersecurity SaaS Grid, Ambient Radial Lighting, Shimmer & Elevation */
+@keyframes cyber-grid-drift {
+  0% {
+    background-position: 0 0, 0 0;
+  }
+  100% {
+    background-position: 48px 48px, 48px 48px;
+  }
+}
+
+.bg-cyber-grid {
+  background-image:
+    linear-gradient(to right, rgba(56, 189, 248, 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(56, 189, 248, 0.055) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 85% 75% at 50% 25%, #000 50%, transparent 100%);
+  animation: cyber-grid-drift 38s linear infinite;
+}
+
+.bg-radial-cyber {
+  background-image:
+    radial-gradient(60% 50% at 18% 8%, rgba(56, 189, 248, 0.14), transparent 70%),
+    radial-gradient(50% 45% at 82% 18%, rgba(45, 212, 191, 0.1), transparent 72%);
+}
+
+@keyframes skeleton-sweep {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--surface-elevated) 25%,
+    rgba(56, 189, 248, 0.1) 50%,
+    var(--surface-elevated) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-sweep 1.8s ease-in-out infinite;
+}
+
+@keyframes status-beacon {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.75);
+    opacity: 0;
+  }
+}
+
+.status-ping-ring {
+  animation: status-beacon 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+.card-hover-elevate {
+  transition:
+    transform var(--dur-short) var(--ease-out),
+    border-color var(--dur-short) var(--ease-out),
+    background-color var(--dur-short) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .card-hover-elevate:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-strong);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

@@ -11,6 +11,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { StatusBadge } from '@/components/shared/status-badge';
+import { ScrollRevealGroup } from '@/components/landing/scroll-reveal';
 
 const FEATURES = [
   {
@@ -105,9 +106,9 @@ export function FeaturesSection() {
       id="capabilities"
       className="border-b border-border bg-background py-16 sm:py-20 px-4 sm:px-8"
     >
-      <div className="mx-auto max-w-7xl space-y-14">
+      <ScrollRevealGroup className="mx-auto max-w-7xl space-y-14">
         <div className="space-y-8">
-          <div className="max-w-2xl space-y-3">
+          <div className="reveal-item max-w-2xl space-y-3">
             <p className="text-xs font-medium text-secondary">
               Platform capabilities
             </p>
@@ -126,7 +127,7 @@ export function FeaturesSection() {
               return (
                 <div
                   key={feat.title}
-                  className="bg-card p-6 space-y-3 hover:bg-surface-elevated transition-colors"
+                  className="reveal-item card-hover-elevate bg-card p-6 space-y-3 hover:bg-surface-elevated transition-colors"
                 >
                   <div className="flex items-center justify-between">
                     <Icon className={`h-5 w-5 ${feat.color}`} />
@@ -147,7 +148,7 @@ export function FeaturesSection() {
         </div>
 
         {/* AI Monitoring Capabilities & Honest Technical Boundaries */}
-        <div className="rounded-lg border border-border bg-sidebar overflow-hidden">
+        <div className="reveal-item rounded-lg border border-border bg-sidebar overflow-hidden">
           <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border bg-card px-6 py-5">
             <div className="space-y-1.5 max-w-2xl">
               <div className="flex items-center gap-2">
@@ -200,7 +201,7 @@ export function FeaturesSection() {
             </table>
           </div>
         </div>
-      </div>
+      </ScrollRevealGroup>
     </section>
   );
 }

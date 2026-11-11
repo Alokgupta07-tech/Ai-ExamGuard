@@ -9,6 +9,7 @@ import {
   readActiveAudioConstraints,
   SustainedAudioActivityFilter,
 } from '@/lib/proctoring/audio-analyzer'
+import { generateClientEventUuid } from '@/lib/proctoring/client-event'
 import type { EventSeverity } from '@/types/database'
 import type {
   AudioMonitorSnapshot,
@@ -142,13 +143,15 @@ export function useAudioProctor({
     }) => {
       if (!reportEventsRef.current) return
 
-      const entryId = `${payload.eventType}-${Date.now()}`
+      const clientEventId = generateClientEventUuid()
+      const occurredAtIso = new Date().toISOString()
+      const entryId = clientEventId
       const localEntry: ProctorTelemetryEntry = {
         id: entryId,
         eventType: payload.eventType,
         severity: payload.severity,
         reason: payload.reason,
-        recordedAt: new Date().toISOString(),
+        recordedAt: occurredAtIso,
         persisted: false,
       }
 
@@ -160,16 +163,23 @@ export function useAudioProctor({
       }
 
       try {
+        const modelVersion = vadAdapterRef.current
+          ? vadAdapterRef.current.modelName
+          : 'web-audio-rms-v1'
         const res = await fetch(`/api/student/exams/${examIdRef.current}/proctor-events`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            clientEventId,
             sessionId: sessionIdRef.current ?? null,
             context: contextRef.current,
             eventType: payload.eventType,
+            sourceModule: 'web_audio',
+            timestamp: occurredAtIso,
+            durationMs: payload.sustainedDurationMs ?? null,
+            modelVersion,
             severity: payload.severity,
             confidence: payload.confidence,
-            sustainedDurationMs: payload.sustainedDurationMs,
             details: payload.details,
           }),
         })

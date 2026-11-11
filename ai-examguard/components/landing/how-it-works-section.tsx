@@ -1,5 +1,6 @@
 import React from 'react';
 import { ClipboardCheck, Cpu, FileEdit, UserCheck } from 'lucide-react';
+import { ScrollRevealGroup } from '@/components/landing/scroll-reveal';
 
 const STEPS = [
   {
@@ -41,8 +42,8 @@ export function HowItWorksSection() {
       id="workflow"
       className="border-b border-border bg-sidebar py-16 sm:py-20 px-4 sm:px-8"
     >
-      <div className="mx-auto max-w-7xl space-y-10">
-        <div className="max-w-2xl space-y-3">
+      <ScrollRevealGroup className="mx-auto max-w-7xl space-y-10">
+        <div className="reveal-item max-w-2xl space-y-3">
           <p className="text-xs font-medium text-primary">
             End-to-end lifecycle
           </p>
@@ -61,7 +62,7 @@ export function HowItWorksSection() {
             return (
               <li
                 key={item.step}
-                className="relative flex flex-col gap-3 rounded-lg border border-border bg-card p-5"
+                className="reveal-item card-hover-elevate relative flex flex-col gap-3 rounded-lg border border-border bg-card p-5"
               >
                 <div className="flex items-center justify-between gap-2 pb-2 border-b border-border">
                   <span className="font-mono text-xs tabular-nums text-primary">
@@ -84,7 +85,7 @@ export function HowItWorksSection() {
             );
           })}
         </ol>
-      </div>
+      </ScrollRevealGroup>
     </section>
   );
 }

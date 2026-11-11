@@ -62,7 +62,7 @@ export function StatCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22 }}
       className={cn(
-        'relative rounded-lg border border-border bg-card p-5 transition-colors hover:border-border-strong',
+        'relative rounded-lg border border-border bg-card p-5 transition-colors hover:border-border-strong card-hover-elevate',
         className
       )}
     >

@@ -170,3 +170,77 @@ export interface CameraMonitorSnapshot {
   telemetryLog: ProctorTelemetryEntry[]
 }
 
+export type RiskCategory = 'NORMAL' | 'REVIEW_SUGGESTED' | 'PRIORITY_REVIEW'
+
+export type EventSourceModule =
+  | 'mediapipe_face'
+  | 'web_audio'
+  | 'browser_visibility'
+  | 'server_session'
+
+export type EventReviewStatus =
+  | 'pending_review'
+  | 'acknowledged'
+  | 'cleared'
+  | 'flagged'
+  | 'dismissed'
+
+export type EventOrigin = 'ai_detection' | 'browser_telemetry' | 'simulated_demo'
+
+export interface CanonicalMonitoringEvent {
+  eventId: string
+  clientEventId: string
+  universityId: string
+  examId: string
+  sessionId: string
+  eventType: string
+  sourceModule: EventSourceModule
+  eventOrigin: EventOrigin
+  isSimulated: boolean
+  timestamp: string
+  ingestedAt: string
+  durationMs: number | null
+  modelVersion: string | null
+  confidence: number | null
+  severity: EventSeverity
+  explanation: string
+  reviewStatus: EventReviewStatus
+  reviewNote?: string | null
+  reviewedAt?: string | null
+  reviewedBy?: string | null
+  metadata: Record<string, unknown>
+}
+
+export interface TemporalCorrelationHit {
+  ruleId: string
+  title: string
+  description: string
+  bonusPoints: number
+  eventIds: string[]
+  windowSeconds: number
+}
+
+export interface ContextualRiskIndicator {
+  code: string
+  label: string
+  impact: 'mitigating' | 'neutral' | 'elevated'
+  detail: string
+}
+
+export interface SessionRiskAssessment {
+  sessionId: string
+  examId: string
+  universityId: string
+  riskCategory: RiskCategory
+  riskScore: number
+  trustScore: number
+  episodeCount: number
+  rawEventCount: number
+  correlations: TemporalCorrelationHit[]
+  contextualIndicators: ContextualRiskIndicator[]
+  summaryExplanation: string
+  evaluatedAt: string
+  autoDisqualified: false
+}
+
+

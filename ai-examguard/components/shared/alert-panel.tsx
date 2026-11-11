@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { motion, useReducedMotion } from 'motion/react';
 import { AlertCircle, CheckCircle2, Info, ShieldAlert, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -50,10 +51,14 @@ export function AlertPanel({
   className,
 }: AlertPanelProps) {
   const style = ALERT_STYLES[tone];
+  const prefersReducedMotion = useReducedMotion();
 
   return (
-    <div
+    <motion.div
       role={tone === 'critical' || tone === 'warning' ? 'alert' : 'status'}
+      initial={prefersReducedMotion ? false : { opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
         'flex items-start gap-3 rounded-lg border px-4 py-3.5 text-sm',
         style.wrapper,
@@ -78,6 +83,6 @@ export function AlertPanel({
           <X className="h-4 w-4" />
         </button>
       )}
-    </div>
+    </motion.div>
   );
 }

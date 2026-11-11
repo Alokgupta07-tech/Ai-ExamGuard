@@ -189,7 +189,13 @@ export function AppSidebar({
                     )}
                   >
                     {active && !isCollapsed && (
-                      <span
+                      <motion.span
+                        layoutId={isMobile ? 'sidebar-active-mobile' : 'sidebar-active-desktop'}
+                        transition={
+                          prefersReducedMotion
+                            ? { duration: 0 }
+                            : { type: 'spring', stiffness: 420, damping: 34 }
+                        }
                         aria-hidden="true"
                         className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-primary"
                       />

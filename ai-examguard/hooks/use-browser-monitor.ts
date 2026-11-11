@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { generateClientEventUuid } from '@/lib/proctoring/client-event'
 import type { EventSeverity } from '@/types/database'
 import type { BrowserMonitorSnapshot, ProctorMonitoringEventType } from '@/types/proctoring'
 
@@ -14,6 +15,7 @@ export interface UseBrowserMonitorOptions {
 }
 
 interface QueuedInterruption {
+  clientEventId: string
   interruptedAt: string
   recoveredAt: string
   durationMs: number
@@ -77,6 +79,8 @@ export function useBrowserMonitor({
 
   const postBrowserEvent = useCallback(
     async (payload: {
+      clientEventId?: string
+      occurredAt?: string
       eventType: Extract<
         ProctorMonitoringEventType,
         'TAB_HIDDEN' | 'FULLSCREEN_EXIT' | 'SESSION_CONNECTION_INTERRUPTED'
@@ -92,12 +96,16 @@ export function useBrowserMonitor({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            clientEventId: payload.clientEventId ?? generateClientEventUuid(),
             sessionId: sessionIdRef.current ?? null,
             context: 'active_exam',
             eventType: payload.eventType,
+            sourceModule: 'browser_visibility',
+            timestamp: payload.occurredAt ?? new Date().toISOString(),
+            durationMs: payload.sustainedDurationMs ?? null,
+            modelVersion: 'browser-visibility-api-v1',
             severity: payload.severity,
             confidence: payload.confidence,
-            sustainedDurationMs: payload.sustainedDurationMs,
             details: payload.details,
           }),
         })
@@ -116,6 +124,8 @@ export function useBrowserMonitor({
 
     for (const item of pending) {
       const ok = await postBrowserEvent({
+        clientEventId: item.clientEventId,
+        occurredAt: item.interruptedAt,
         eventType: 'SESSION_CONNECTION_INTERRUPTED',
         severity: 'low',
         confidence: 0.99,
@@ -257,6 +267,7 @@ export function useBrowserMonitor({
       if (interruptedAtMs !== null) {
         const now = Date.now()
         const interruption: QueuedInterruption = {
+          clientEventId: generateClientEventUuid(),
           interruptedAt: new Date(interruptedAtMs).toISOString(),
           recoveredAt: new Date(now).toISOString(),
           durationMs: Math.max(0, now - interruptedAtMs),

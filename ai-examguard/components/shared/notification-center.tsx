@@ -131,41 +131,51 @@ export function NotificationCenter({
                   No active notifications.
                 </div>
               ) : (
-                items.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      onSelectNotification?.(item);
-                      setOpen(false);
-                    }}
-                    className={cn(
-                      'w-full text-left px-4 py-3 flex items-start gap-3 transition-colors hover:bg-surface-elevated/50 cursor-pointer',
-                      !item.read && 'bg-primary/[0.04]'
-                    )}
-                  >
-                    <div className="mt-0.5 shrink-0">
-                      {item.severity === 'critical' ? (
-                        <ShieldAlert className="h-4 w-4 text-critical" />
-                      ) : item.severity === 'warning' ? (
-                        <AlertTriangle className="h-4 w-4 text-warning" />
-                      ) : (
-                        <Info className="h-4 w-4 text-primary" />
+                <AnimatePresence initial={false}>
+                  {items.map((item, idx) => (
+                    <motion.button
+                      key={item.id}
+                      type="button"
+                      layout={!prefersReducedMotion}
+                      initial={prefersReducedMotion ? false : { opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={prefersReducedMotion ? undefined : { opacity: 0, x: -10 }}
+                      transition={{
+                        duration: 0.16,
+                        delay: prefersReducedMotion ? 0 : Math.min(idx * 0.03, 0.12),
+                      }}
+                      onClick={() => {
+                        onSelectNotification?.(item);
+                        setOpen(false);
+                      }}
+                      className={cn(
+                        'w-full text-left px-4 py-3 flex items-start gap-3 transition-colors hover:bg-surface-elevated/50 cursor-pointer',
+                        !item.read && 'bg-primary/[0.04]'
                       )}
-                    </div>
-                    <div className="flex-1 min-w-0 space-y-0.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-semibold text-foreground truncate">
-                          {item.title}
-                        </p>
-                        <span className="text-xs font-mono text-muted-foreground shrink-0 tabular-reading">
-                          {item.timestamp}
-                        </span>
+                    >
+                      <div className="mt-0.5 shrink-0">
+                        {item.severity === 'critical' ? (
+                          <ShieldAlert className="h-4 w-4 text-critical" />
+                        ) : item.severity === 'warning' ? (
+                          <AlertTriangle className="h-4 w-4 text-warning" />
+                        ) : (
+                          <Info className="h-4 w-4 text-primary" />
+                        )}
                       </div>
-                      <p className="text-xs text-muted-foreground line-clamp-2">{item.message}</p>
-                    </div>
-                  </button>
-                ))
+                      <div className="flex-1 min-w-0 space-y-0.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-semibold text-foreground truncate">
+                            {item.title}
+                          </p>
+                          <span className="text-xs font-mono text-muted-foreground shrink-0 tabular-reading">
+                            {item.timestamp}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{item.message}</p>
+                      </div>
+                    </motion.button>
+                  ))}
+                </AnimatePresence>
               )}
             </div>
           </motion.div>

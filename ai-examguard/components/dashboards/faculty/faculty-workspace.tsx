@@ -20,6 +20,7 @@ import {
   Users,
 } from 'lucide-react';
 import { useDashboardData } from '@/hooks/use-dashboard-data';
+import { useMonitoringRealtime } from '@/hooks/use-monitoring-realtime';
 import {
   createExamAction,
   getFacultyDashboardAction,
@@ -30,9 +31,11 @@ import {
 } from '@/lib/actions/exam-actions';
 import {
   downloadCsvFile,
+  formatRiskCategoryLabel,
   formatShortDateTime,
   getExamStatusTone,
   getReviewStatusTone,
+  getRiskCategoryTone,
   getSessionStatusTone,
   mapSeverityToTimeline,
 } from '@/lib/utils/dashboard-formatters';
@@ -68,6 +71,11 @@ export type FacultySection =
 export function FacultyWorkspace({ section }: { section: FacultySection }) {
   const router = useRouter();
   const { data, isLoading, error, refresh } = useDashboardData(getFacultyDashboardAction);
+  const realtime = useMonitoringRealtime({
+    tenantId: data?.tenantId ?? null,
+    enabled: Boolean(data?.tenantId),
+    onUpdate: refresh,
+  });
   const [banner, setBanner] = useState<{ tone: 'success' | 'critical'; text: string } | null>(
     null
   );
@@ -327,6 +335,22 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
       ),
     },
     {
+      key: 'risk',
+      header: 'Risk Category',
+      sortable: true,
+      sortValue: (s) => s.riskScore,
+      render: (s) => (
+        <div className="flex items-center gap-2">
+          <StatusBadge tone={getRiskCategoryTone(s.riskCategory)}>
+            {formatRiskCategoryLabel(s.riskCategory)}
+          </StatusBadge>
+          <span className="font-mono text-xs text-muted-foreground tabular-nums">
+            {s.riskScore.toFixed(0)}
+          </span>
+        </div>
+      ),
+    },
+    {
       key: 'status',
       header: 'Status',
       render: (s) => (
@@ -469,17 +493,31 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
             </ChartCard>
 
             <div className="space-y-3">
-              <h2 className="font-heading text-lg font-semibold text-foreground">
-                Recent Examination Activity
-              </h2>
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="font-heading text-lg font-semibold text-foreground">
+                  Recent Examination Activity
+                </h2>
+                <StatusBadge
+                  tone={realtime.connectionStatus === 'live' ? 'success' : 'neutral'}
+                >
+                  {realtime.connectionStatus === 'live'
+                    ? 'Realtime Live'
+                    : 'Monitoring Sync'}
+                </StatusBadge>
+              </div>
               <EventTimeline
                 events={data.proctorEvents.slice(0, 6).map((ev) => ({
                   id: ev.id,
                   title: `${ev.studentName} • ${ev.eventType.replace(/_/g, ' ')}`,
-                  description: ev.examTitle,
+                  description: `${ev.examTitle} — ${ev.explanation}`,
                   timestamp: formatShortDateTime(ev.createdAt),
                   severity: mapSeverityToTimeline(ev.severity),
-                  category: ev.eventType.includes('FACE') ? 'camera' : 'browser',
+                  category:
+                    ev.sourceModule === 'mediapipe_face' || ev.eventType.includes('FACE')
+                      ? 'camera'
+                      : ev.sourceModule === 'web_audio' || ev.eventType.includes('AUDIO')
+                        ? 'audio'
+                        : 'browser',
                 }))}
                 emptyTitle="No Recent Exam Telemetry"
                 emptyDescription="Monitoring alerts and examination submissions from your courses will appear here."
@@ -748,6 +786,17 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
                 <span className="font-mono text-xs font-bold tabular-nums text-warning">
                   {rc.trustScore.toFixed(0)}%
                 </span>
+              ),
+            },
+            {
+              key: 'risk',
+              header: 'Risk Category',
+              sortable: true,
+              sortValue: (rc) => rc.riskScore,
+              render: (rc) => (
+                <StatusBadge tone={getRiskCategoryTone(rc.riskCategory)}>
+                  {formatRiskCategoryLabel(rc.riskCategory)}
+                </StatusBadge>
               ),
             },
             {

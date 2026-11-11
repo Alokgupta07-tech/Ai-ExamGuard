@@ -1,8 +1,16 @@
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import {
+  IntegrationFoundationService,
+  toDashboardIntegrationViews,
+} from '@/lib/integrations/service';
+import {
+  evaluateSessionRiskAndCorrelations,
+  mapRowToCanonicalEvent,
+  type RawProctorEventRow,
+} from '@/lib/proctoring/risk-engine';
 import type {
   AuditAction,
-  EventSeverity,
   EventType,
   ExamStatus,
   QuestionType,
@@ -24,6 +32,7 @@ import type {
   ProctorEventView,
   ProfileSummary,
   QuestionView,
+  ReviewActionHistoryEntry,
   ReviewActionInput,
   ReviewCaseView,
   SessionView,
@@ -264,11 +273,11 @@ async function fetchTenantAcademicData(tenantId: string, courseFilterIds?: strin
 
   const sessionIds = sessionRows.map((s) => s.id);
 
-  const [{ data: rawEvents }, { data: rawCases }] = await Promise.all([
+  const [{ data: rawEvents }, { data: rawCases }, { data: rawSessionAnswers }, { data: rawReviewActions }] = await Promise.all([
     sessionIds.length > 0
       ? supabaseAdmin
           .from('proctor_events')
-          .select('id, session_id, event_type, severity, confidence, details, created_at')
+          .select('id, session_id, tenant_id, event_type, severity, confidence, details, created_at')
           .in('session_id', sessionIds)
           .order('created_at', { ascending: false })
           .limit(200)
@@ -280,17 +289,23 @@ async function fetchTenantAcademicData(tenantId: string, courseFilterIds?: strin
           .in('session_id', sessionIds)
           .order('priority', { ascending: true })
       : Promise.resolve({ data: [] }),
+    sessionIds.length > 0
+      ? supabaseAdmin
+          .from('session_answers')
+          .select('session_id')
+          .in('session_id', sessionIds)
+      : Promise.resolve({ data: [] }),
+    sessionIds.length > 0
+      ? supabaseAdmin
+          .from('review_actions')
+          .select('id, review_case_id, session_id, reviewer_id, action_type, message, created_at')
+          .in('session_id', sessionIds)
+          .order('created_at', { ascending: false })
+          .limit(150)
+      : Promise.resolve({ data: [] }),
   ]);
 
-  const eventRows = (rawEvents || []) as {
-    id: string;
-    session_id: string;
-    event_type: EventType;
-    severity: EventSeverity;
-    confidence: number | null;
-    details: Record<string, unknown> | null;
-    created_at: string;
-  }[];
+  const eventRows = (rawEvents || []) as RawProctorEventRow[];
 
   const caseRows = (rawCases || []) as {
     id: string;
@@ -303,10 +318,22 @@ async function fetchTenantAcademicData(tenantId: string, courseFilterIds?: strin
     reviewed_at: string | null;
   }[];
 
+  const answerRows = (rawSessionAnswers || []) as { session_id: string }[];
+  const reviewActionRows = (rawReviewActions || []) as {
+    id: string;
+    review_case_id: string;
+    session_id: string;
+    reviewer_id: string;
+    action_type: ReviewActionHistoryEntry['actionType'];
+    message: string | null;
+    created_at: string;
+  }[];
+
   const profileMap = await buildProfileMap([
     ...coursesRows.map((c) => c.instructor_id),
     ...enrollmentRows.map((e) => e.student_id),
     ...sessionRows.map((s) => s.student_id),
+    ...reviewActionRows.map((a) => a.reviewer_id),
   ]);
 
   const courseMap = new Map(coursesRows.map((c) => [c.id, c]));
@@ -318,6 +345,14 @@ async function fetchTenantAcademicData(tenantId: string, courseFilterIds?: strin
     enrollmentCountByCourse.set(
       enr.course_id,
       (enrollmentCountByCourse.get(enr.course_id) || 0) + 1
+    );
+  }
+
+  const answeredCountBySession = new Map<string, number>();
+  for (const ans of answerRows) {
+    answeredCountBySession.set(
+      ans.session_id,
+      (answeredCountBySession.get(ans.session_id) || 0) + 1
     );
   }
 
@@ -390,47 +425,33 @@ async function fetchTenantAcademicData(tenantId: string, courseFilterIds?: strin
     };
   });
 
-  const sessions: SessionView[] = sessionRows.map((s) => {
-    const exam = examMap.get(s.exam_id);
-    const course = exam ? courseMap.get(exam.course_id) : undefined;
-    const student = profileMap.get(s.student_id);
-    return {
-      id: s.id,
-      examId: s.exam_id,
-      examTitle: exam?.title || 'Examination',
-      courseCode: course?.code || 'COURSE',
-      studentId: s.student_id,
-      studentName: student?.fullName || 'Candidate',
-      studentEmail: student?.email || 'N/A',
-      status: s.status,
-      startedAt: s.started_at,
-      submittedAt: s.submitted_at,
-      score: s.score !== null ? Number(s.score) : null,
-      trustScore: Number(s.trust_score ?? 100),
-      hardwareStatus: s.hardware_status || {},
-      createdAt: s.created_at,
-    };
-  });
-
   const proctorEvents: ProctorEventView[] = eventRows.map((ev) => {
     const session = sessionMap.get(ev.session_id);
     const exam = session ? examMap.get(session.exam_id) : undefined;
     const student = session ? profileMap.get(session.student_id) : undefined;
+    const canonical = mapRowToCanonicalEvent(ev, session?.exam_id || '');
     return {
-      id: ev.id,
-      sessionId: ev.session_id,
+      id: canonical.eventId,
+      clientEventId: canonical.clientEventId,
+      universityId: canonical.universityId,
+      examId: canonical.examId,
+      sessionId: canonical.sessionId,
       examTitle: exam?.title || 'Examination',
       studentName: student?.fullName || 'Candidate',
-      eventType:
-        (typeof ev.details?.phase9EventType === 'string'
-          ? (ev.details.phase9EventType as EventType)
-          : undefined) ||
-        (typeof ev.details?.phase8EventType === 'string'
-          ? (ev.details.phase8EventType as EventType)
-          : undefined) ||
-        ev.event_type,
-      severity: ev.severity,
-      confidence: ev.confidence !== null ? Number(ev.confidence) : null,
+      eventType: canonical.eventType as EventType,
+      sourceModule: canonical.sourceModule,
+      eventOrigin: canonical.eventOrigin,
+      isSimulated: canonical.isSimulated,
+      severity: canonical.severity,
+      confidence: canonical.confidence,
+      occurredAt: canonical.timestamp,
+      durationMs: canonical.durationMs,
+      modelVersion: canonical.modelVersion,
+      explanation: canonical.explanation,
+      reviewStatus: canonical.reviewStatus,
+      reviewNote: canonical.reviewNote ?? null,
+      reviewedAt: canonical.reviewedAt ?? null,
+      reviewedBy: canonical.reviewedBy ?? null,
       details: ev.details || {},
       createdAt: ev.created_at,
     };
@@ -443,11 +464,60 @@ async function fetchTenantAcademicData(tenantId: string, courseFilterIds?: strin
     eventsBySession.set(ev.sessionId, arr);
   }
 
+  const assessmentBySession = new Map<string, ReturnType<typeof evaluateSessionRiskAndCorrelations>['assessment']>();
+  for (const s of sessionRows) {
+    const sessEvents = eventsBySession.get(s.id) || [];
+    const evalRes = evaluateSessionRiskAndCorrelations({
+      sessionId: s.id,
+      examId: s.exam_id,
+      universityId: s.tenant_id,
+      priorEvents: sessEvents.map((ev) => ({
+        eventId: ev.id,
+        eventType: ev.eventType,
+        occurredAt: ev.occurredAt,
+        durationMs: ev.durationMs,
+        details: ev.details,
+      })),
+    });
+    assessmentBySession.set(s.id, evalRes.assessment);
+  }
+
+  const sessions: SessionView[] = sessionRows.map((s) => {
+    const exam = examMap.get(s.exam_id);
+    const course = exam ? courseMap.get(exam.course_id) : undefined;
+    const student = profileMap.get(s.student_id);
+    const assessment = assessmentBySession.get(s.id);
+    return {
+      id: s.id,
+      examId: s.exam_id,
+      examTitle: exam?.title || 'Examination',
+      courseCode: course?.code || 'COURSE',
+      studentId: s.student_id,
+      studentName: student?.fullName || 'Candidate',
+      studentEmail: student?.email || 'N/A',
+      status: s.status,
+      startedAt: s.started_at,
+      submittedAt: s.submitted_at,
+      durationMinutes: exam?.duration_minutes ?? undefined,
+      endTime: exam?.end_time ?? null,
+      answeredCount: answeredCountBySession.get(s.id) || 0,
+      totalQuestionCount: exam ? questionCountByExam.get(exam.id) || 0 : 0,
+      score: s.score !== null ? Number(s.score) : null,
+      trustScore: Number(s.trust_score ?? assessment?.trustScore ?? 100),
+      riskCategory: assessment?.riskCategory ?? 'NORMAL',
+      riskScore: assessment?.riskScore ?? 0,
+      riskAssessment: assessment,
+      hardwareStatus: s.hardware_status || {},
+      createdAt: s.created_at,
+    };
+  });
+
   const reviewCases: ReviewCaseView[] = caseRows.map((rc) => {
     const session = sessionMap.get(rc.session_id);
     const exam = session ? examMap.get(session.exam_id) : undefined;
     const course = exam ? courseMap.get(exam.course_id) : undefined;
     const student = session ? profileMap.get(session.student_id) : undefined;
+    const assessment = assessmentBySession.get(rc.session_id);
     return {
       id: rc.id,
       sessionId: rc.session_id,
@@ -458,14 +528,28 @@ async function fetchTenantAcademicData(tenantId: string, courseFilterIds?: strin
       studentEmail: student?.email || 'N/A',
       status: rc.status,
       priority: rc.priority,
-      trustScore: Number(session?.trust_score ?? 100),
-      summary: rc.summary,
+      trustScore: Number(session?.trust_score ?? assessment?.trustScore ?? 100),
+      riskCategory: assessment?.riskCategory ?? 'NORMAL',
+      riskScore: assessment?.riskScore ?? 0,
+      riskAssessment: assessment,
+      summary: rc.summary || assessment?.summaryExplanation || null,
       assignedTo: rc.assigned_to,
       createdAt: rc.created_at,
       reviewedAt: rc.reviewed_at,
       events: eventsBySession.get(rc.session_id) || [],
     };
   });
+
+  const reviewActions: ReviewActionHistoryEntry[] = reviewActionRows.map((a) => ({
+    id: a.id,
+    reviewCaseId: a.review_case_id,
+    sessionId: a.session_id,
+    reviewerId: a.reviewer_id,
+    reviewerName: profileMap.get(a.reviewer_id)?.fullName || 'Invigilator',
+    actionType: a.action_type,
+    message: a.message,
+    createdAt: a.created_at,
+  }));
 
   return {
     courses,
@@ -474,6 +558,7 @@ async function fetchTenantAcademicData(tenantId: string, courseFilterIds?: strin
     sessions,
     proctorEvents,
     reviewCases,
+    reviewActions,
     enrollments: enrollmentRows.map((enr) => {
       const course = courseMap.get(enr.course_id);
       const student = profileMap.get(enr.student_id);
@@ -557,21 +642,16 @@ export class DashboardService {
       createdAt: l.created_at,
     }));
 
-    const integrations: IntegrationConfigView[] = ((rawIntegrations || []) as {
-      id: string;
-      integration_type: IntegrationConfigView['integrationType'];
-      provider_name: string;
-      is_active: boolean;
-      config: Record<string, unknown> | null;
-      updated_at: string;
-    }[]).map((i) => ({
-      id: i.id,
-      integrationType: i.integration_type,
-      providerName: i.provider_name,
-      isActive: i.is_active,
-      configSummary: (i.config?.endpoint as string | undefined) || 'Configured',
-      updatedAt: i.updated_at,
-    }));
+    const integrations: IntegrationConfigView[] = toDashboardIntegrationViews(
+      (rawIntegrations || []) as {
+        id: string;
+        integration_type: IntegrationConfigView['integrationType'];
+        provider_name: string;
+        is_active: boolean;
+        config: Record<string, unknown> | null;
+        updated_at: string;
+      }[]
+    );
 
     return {
       tenant: {
@@ -781,6 +861,7 @@ export class DashboardService {
       sessions: academic.sessions,
       proctorEvents: academic.proctorEvents,
       reviewCases: academic.reviewCases,
+      reviewActions: academic.reviewActions,
     };
   }
 
@@ -921,21 +1002,14 @@ export class DashboardService {
     isActive: boolean;
   }) {
     const actor = await requireRoleActor(['admin']);
-    const { error } = await supabaseAdmin.from('integration_configs').upsert(
-      {
-        tenant_id: actor.tenantId,
-        integration_type: payload.integrationType,
-        provider_name: payload.providerName.trim(),
-        is_active: payload.isActive,
-        config: { endpoint: payload.endpoint.trim() },
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'tenant_id,integration_type,provider_name' }
-    );
-
-    if (error) {
-      throw new Error(`Failed to save integration: ${error.message}`);
-    }
+    await IntegrationFoundationService.upsertTenantConnector({
+      tenantId: actor.tenantId,
+      actorUserId: actor.userId,
+      integrationType: payload.integrationType,
+      providerName: payload.providerName,
+      isActive: payload.isActive,
+      publicConfig: { endpoint: payload.endpoint.trim() },
+    });
   }
 
   static async recordReviewAction(input: ReviewActionInput) {

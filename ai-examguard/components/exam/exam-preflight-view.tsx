@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { motion, useReducedMotion } from 'motion/react';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -50,6 +51,7 @@ function formatWaitCountdown(ms: number): string {
 
 export function ExamPreflightView({ examId }: { examId: string }) {
   const router = useRouter();
+  const prefersReducedMotion = useReducedMotion();
 
   const [payload, setPayload] = useState<ExamPreflightPayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -268,6 +270,16 @@ export function ExamPreflightView({ examId }: { examId: string }) {
   const hardwareBlocked =
     (reqCamera && cameraOk === false) || (reqAudio && micOk === false);
   const canLaunch = payload.eligible && agreedHonor && !entering && !hardwareBlocked;
+  const cameraStepReady = !reqCamera || cameraOk === true;
+  const audioStepReady = !reqAudio || micOk === true;
+  const fullscreenStepReady = !reqFullscreen || fullscreenOk;
+  const completedChecks = [
+    cameraStepReady,
+    audioStepReady,
+    fullscreenStepReady,
+    agreedHonor,
+  ].filter(Boolean).length;
+  const readinessPercent = Math.round((completedChecks / 4) * 100);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -440,6 +452,29 @@ export function ExamPreflightView({ examId }: { examId: string }) {
                 <RefreshCw className="h-3.5 w-3.5" />
                 Run Device &amp; AI Check
               </Button>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Pre-flight Verification Progress</span>
+              <span className="font-mono text-foreground tabular-nums">
+                {completedChecks} / 4 Ready ({readinessPercent}%)
+              </span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-elevated">
+              <motion.div
+                className={
+                  readinessPercent === 100 ? 'h-full rounded-full bg-success' : 'h-full rounded-full bg-primary'
+                }
+                initial={false}
+                animate={{ width: `${readinessPercent}%` }}
+                transition={
+                  prefersReducedMotion
+                    ? { duration: 0 }
+                    : { duration: 0.35, ease: [0.22, 1, 0.36, 1] }
+                }
+              />
             </div>
           </div>
 

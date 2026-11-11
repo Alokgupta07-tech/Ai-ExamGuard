@@ -10,8 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { recordReviewAction } from '@/lib/actions/dashboard-actions';
 import {
+  formatRiskCategoryLabel,
   formatShortDateTime,
   getReviewStatusTone,
+  getRiskCategoryTone,
   mapSeverityToTimeline,
 } from '@/lib/utils/dashboard-formatters';
 import type { ReviewActionType, ReviewStatus } from '@/types/database';
@@ -74,9 +76,14 @@ export function ReviewInspectionDrawer({
       }
       badge={
         reviewCase ? (
-          <StatusBadge tone={getReviewStatusTone(reviewCase.status)}>
-            {reviewCase.status.replace(/_/g, ' ')}
-          </StatusBadge>
+          <div className="flex items-center gap-1.5">
+            <StatusBadge tone={getRiskCategoryTone(reviewCase.riskCategory)}>
+              {formatRiskCategoryLabel(reviewCase.riskCategory)}
+            </StatusBadge>
+            <StatusBadge tone={getReviewStatusTone(reviewCase.status)}>
+              {reviewCase.status.replace(/_/g, ' ')}
+            </StatusBadge>
+          </div>
         ) : undefined
       }
       footer={
@@ -132,42 +139,96 @@ export function ReviewInspectionDrawer({
           {error && <AlertPanel tone="critical" title="Action Failed" description={error} />}
 
           {/* Case Metadata Summary */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-xl border border-[#243249] bg-[#111B2D] p-3">
-              <p className="text-[11px] font-mono uppercase text-[#94A3B8]">Trust Score</p>
-              <p className="mt-1 font-mono text-xl font-bold text-[#F8FAFC]">
+          <div className="grid grid-cols-4 gap-2.5">
+            <div className="rounded-xl border border-border bg-surface-elevated p-3">
+              <p className="text-[11px] font-mono uppercase text-muted-foreground">Risk Score</p>
+              <p className="mt-1 font-mono text-xl font-bold text-foreground tabular-nums">
+                {reviewCase.riskScore.toFixed(0)}/100
+              </p>
+            </div>
+            <div className="rounded-xl border border-border bg-surface-elevated p-3">
+              <p className="text-[11px] font-mono uppercase text-muted-foreground">Trust Score</p>
+              <p className="mt-1 font-mono text-xl font-bold text-foreground tabular-nums">
                 {reviewCase.trustScore.toFixed(0)}%
               </p>
             </div>
-            <div className="rounded-xl border border-[#243249] bg-[#111B2D] p-3">
-              <p className="text-[11px] font-mono uppercase text-[#94A3B8]">Priority</p>
-              <p className="mt-1 font-mono text-xl font-bold text-[#38BDF8]">
+            <div className="rounded-xl border border-border bg-surface-elevated p-3">
+              <p className="text-[11px] font-mono uppercase text-muted-foreground">Priority</p>
+              <p className="mt-1 font-mono text-xl font-bold text-primary tabular-nums">
                 P{reviewCase.priority}
               </p>
             </div>
-            <div className="rounded-xl border border-[#243249] bg-[#111B2D] p-3">
-              <p className="text-[11px] font-mono uppercase text-[#94A3B8]">Signals</p>
-              <p className="mt-1 font-mono text-xl font-bold text-[#F8FAFC]">
-                {reviewCase.events.length}
+            <div className="rounded-xl border border-border bg-surface-elevated p-3">
+              <p className="text-[11px] font-mono uppercase text-muted-foreground">Episodes</p>
+              <p className="mt-1 font-mono text-xl font-bold text-foreground tabular-nums">
+                {reviewCase.riskAssessment?.episodeCount ?? reviewCase.events.length}
               </p>
             </div>
           </div>
 
+          {reviewCase.riskAssessment &&
+            (reviewCase.riskAssessment.correlations.length > 0 ||
+              reviewCase.riskAssessment.contextualIndicators.length > 0) && (
+              <div className="rounded-xl border border-border bg-surface-elevated p-4 space-y-3">
+                {reviewCase.riskAssessment.correlations.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-mono uppercase text-warning">
+                      Temporal Correlations Detected
+                    </p>
+                    <ul className="space-y-1.5">
+                      {reviewCase.riskAssessment.correlations.map((corr) => (
+                        <li
+                          key={corr.ruleId}
+                          className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-foreground"
+                        >
+                          <span className="font-semibold">{corr.title}:</span> {corr.description}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {reviewCase.riskAssessment.contextualIndicators.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-mono uppercase text-muted-foreground">
+                      Contextual Risk Indicators
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {reviewCase.riskAssessment.contextualIndicators.map((ind) => (
+                        <StatusBadge
+                          key={ind.code}
+                          tone={
+                            ind.impact === 'elevated'
+                              ? 'warning'
+                              : ind.impact === 'mitigating'
+                                ? 'success'
+                                : 'neutral'
+                          }
+                          title={ind.detail}
+                        >
+                          {ind.label}
+                        </StatusBadge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
           {reviewCase.summary && (
-            <div className="rounded-xl border border-[#243249] bg-[#111B2D] p-4 space-y-1">
-              <p className="text-xs font-mono uppercase text-[#94A3B8]">Case Summary</p>
-              <p className="text-sm text-[#F8FAFC]">{reviewCase.summary}</p>
+            <div className="rounded-xl border border-border bg-surface-elevated p-4 space-y-1">
+              <p className="text-xs font-mono uppercase text-muted-foreground">Case Summary</p>
+              <p className="text-sm text-foreground">{reviewCase.summary}</p>
             </div>
           )}
 
           {/* Explainable Telemetry Timeline */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="font-heading text-sm font-semibold text-[#F8FAFC] flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4 text-[#38BDF8]" />
+              <h3 className="font-heading text-sm font-semibold text-foreground flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4 text-primary" />
                 Explainable Event Timeline
               </h3>
-              <span className="text-xs font-mono text-[#94A3B8]">
+              <span className="text-xs font-mono text-muted-foreground">
                 Opened {formatShortDateTime(reviewCase.createdAt)}
               </span>
             </div>
@@ -175,19 +236,21 @@ export function ReviewInspectionDrawer({
             <EventTimeline
               events={reviewCase.events.map((ev) => ({
                 id: ev.id,
-                title: ev.eventType.replace(/_/g, ' '),
-                description:
-                  (ev.details?.reason as string | undefined) ||
-                  `Detected ${ev.eventType.replace(/_/g, ' ').toLowerCase()} during session.`,
-                timestamp: formatShortDateTime(ev.createdAt),
+                title: `${ev.eventType.replace(/_/g, ' ')} (${ev.sourceModule})`,
+                description: ev.explanation,
+                timestamp: formatShortDateTime(ev.occurredAt || ev.createdAt),
                 severity: mapSeverityToTimeline(ev.severity),
                 category:
-                  ev.eventType.includes('FACE')
+                  ev.sourceModule === 'mediapipe_face'
                     ? 'camera'
-                    : ev.eventType.includes('AUDIO')
-                    ? 'audio'
-                    : 'browser',
+                    : ev.sourceModule === 'web_audio'
+                      ? 'audio'
+                      : 'browser',
                 metadata: {
+                  review: ev.reviewStatus,
+                  ...(ev.durationMs !== null
+                    ? { duration: `${(ev.durationMs / 1000).toFixed(1)}s` }
+                    : {}),
                   ...(ev.confidence !== null ? { confidence: ev.confidence.toFixed(2) } : {}),
                 },
               }))}

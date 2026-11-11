@@ -1,6 +1,7 @@
 import React from 'react';
 import { Database, EyeOff, KeyRound, Network, Server, Shield } from 'lucide-react';
 import { StatusBadge } from '@/components/shared/status-badge';
+import { ScrollRevealGroup } from '@/components/landing/scroll-reveal';
 
 /**
  * Combined Security Architecture, University Integration, and Privacy-by-Design sections.
@@ -13,9 +14,9 @@ export function ArchitecturePrivacySection() {
         id="security"
         className="border-b border-border py-16 sm:py-20 px-4 sm:px-8"
       >
-        <div className="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <ScrollRevealGroup className="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Security Architecture */}
-          <div className="rounded-lg border border-border bg-card p-6 sm:p-8 space-y-6">
+          <div className="reveal-item card-hover-elevate rounded-lg border border-border bg-card p-6 sm:p-8 space-y-6">
             <div className="flex items-center justify-between gap-2">
               <StatusBadge tone="cyan">Defense in depth</StatusBadge>
               <Shield className="h-5 w-5 text-primary" />
@@ -60,7 +61,7 @@ export function ArchitecturePrivacySection() {
           </div>
 
           {/* University Integration */}
-          <div className="rounded-lg border border-border bg-card p-6 sm:p-8 space-y-6">
+          <div className="reveal-item card-hover-elevate rounded-lg border border-border bg-card p-6 sm:p-8 space-y-6">
             <div className="flex items-center justify-between gap-2">
               <StatusBadge tone="teal">Campus readiness</StatusBadge>
               <Network className="h-5 w-5 text-secondary" />
@@ -103,12 +104,13 @@ export function ArchitecturePrivacySection() {
               </div>
             </div>
           </div>
-        </div>
+        </ScrollRevealGroup>
       </section>
 
       {/* Privacy Section */}
       <section id="privacy" className="border-b border-border bg-sidebar py-16 sm:py-20 px-4 sm:px-8">
-        <div className="mx-auto max-w-6xl rounded-lg border border-success/35 bg-card p-6 sm:p-10">
+        <ScrollRevealGroup className="mx-auto max-w-6xl">
+          <div className="reveal-item card-hover-elevate rounded-lg border border-success/35 bg-card p-6 sm:p-10">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
             <div className="space-y-3 max-w-2xl">
               <div className="inline-flex items-center gap-2 text-xs font-medium text-success">
@@ -137,7 +139,8 @@ export function ArchitecturePrivacySection() {
               </div>
             </div>
           </div>
-        </div>
+          </div>
+        </ScrollRevealGroup>
       </section>
     </div>
   );

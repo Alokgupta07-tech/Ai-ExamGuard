@@ -63,7 +63,13 @@ export function StatusBadge({
       {...props}
     >
       {pulse && (
-        <span className="relative flex h-2 w-2 shrink-0" aria-hidden="true">
+        <span className="relative flex h-2 w-2 shrink-0 items-center justify-center" aria-hidden="true">
+          <span
+            className={cn(
+              'status-ping-ring absolute inline-flex h-2 w-2 rounded-full motion-reduce:hidden',
+              DOT_STYLES[tone]
+            )}
+          />
           <span className={cn('relative inline-flex rounded-full h-2 w-2', DOT_STYLES[tone])} />
         </span>
       )}

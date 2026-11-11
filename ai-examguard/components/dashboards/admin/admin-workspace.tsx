@@ -5,7 +5,6 @@ import {
   BookOpen,
   Building,
   CheckCircle2,
-  Download,
   Eye,
   Flag,
   GraduationCap,
@@ -23,11 +22,9 @@ import {
   getAdminDashboardAction,
   updateExamStatusAction,
   updateTenantConfigAction,
-  upsertIntegrationAction,
 } from '@/lib/actions/dashboard-actions';
 import { removeUserAction, updateUserRoleAction } from '@/lib/actions/user-actions';
 import {
-  downloadCsvFile,
   formatShortDateTime,
   getExamStatusTone,
   getRoleTone,
@@ -48,6 +45,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ReviewInspectionDrawer } from '@/components/dashboards/shared/review-inspection-drawer';
+import { AuditLogsPanel } from './audit-logs-panel';
+import { IntegrationHub } from './integration-hub';
+import { ReportingWorkspace } from './reporting-workspace';
 import {
   BulkCsvModal,
   CreateCourseModal,
@@ -56,10 +56,8 @@ import {
 } from './admin-modals';
 import type { ExamStatus, UserRole } from '@/types/database';
 import type {
-  AuditLogView,
   CourseView,
   ExamView,
-  IntegrationConfigView,
   QuestionView,
   ReviewCaseView,
   TenantMemberView,
@@ -117,12 +115,6 @@ export function AdminWorkspace({
   const [maxViolations, setMaxViolations] = useState<number | null>(null);
   const [tenantNameDraft, setTenantNameDraft] = useState<string | null>(null);
   const [tenantDomainDraft, setTenantDomainDraft] = useState<string | null>(null);
-
-  // Integration draft
-  const [intProvider, setIntProvider] = useState('Canvas LMS');
-  const [intType, setIntType] = useState<IntegrationConfigView['integrationType']>('lms');
-  const [intEndpoint, setIntEndpoint] = useState('');
-  const [savingInt, setSavingInt] = useState(false);
 
   const examActivitySeries = useMemo(() => {
     if (!data) return [];
@@ -252,24 +244,6 @@ export function AdminWorkspace({
       return;
     }
     await notify('Updated university profile configuration.');
-  };
-
-  const handleSaveIntegration = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavingInt(true);
-    const res = await upsertIntegrationAction({
-      integrationType: intType,
-      providerName: intProvider,
-      endpoint: intEndpoint || 'https://lms.university.edu/lti',
-      isActive: true,
-    });
-    setSavingInt(false);
-    if (!res.success) {
-      setBanner({ tone: 'critical', text: res.error });
-      return;
-    }
-    setIntEndpoint('');
-    await notify(`Saved integration connector for ${intProvider}.`);
   };
 
   const memberColumns: DataTableColumn<TenantMemberView>[] = [
@@ -468,45 +442,6 @@ export function AdminWorkspace({
       key: 'points',
       header: 'Points',
       render: (q) => <span className="font-mono text-xs text-[#F8FAFC]">{q.points} pts</span>,
-    },
-  ];
-
-  const auditColumns: DataTableColumn<AuditLogView>[] = [
-    {
-      key: 'action',
-      header: 'Action',
-      sortable: true,
-      sortValue: (a) => a.action,
-      render: (a) => (
-        <StatusBadge tone="teal" className="font-mono text-[10px]">
-          {a.action}
-        </StatusBadge>
-      ),
-    },
-    {
-      key: 'actor',
-      header: 'Actor',
-      render: (a) => <span className="text-xs text-[#F8FAFC]">{a.actorName}</span>,
-    },
-    {
-      key: 'entity',
-      header: 'Target',
-      render: (a) => (
-        <span className="font-mono text-xs text-[#94A3B8]">
-          {a.entityType || 'system'}
-        </span>
-      ),
-    },
-    {
-      key: 'time',
-      header: 'Timestamp',
-      sortable: true,
-      sortValue: (a) => a.createdAt,
-      render: (a) => (
-        <span className="font-mono text-xs text-[#94A3B8]">
-          {formatShortDateTime(a.createdAt)}
-        </span>
-      ),
     },
   ];
 
@@ -869,49 +804,7 @@ export function AdminWorkspace({
       {/* REPORTS */}
       {section === 'reports' && (
         <div className="space-y-6">
-          <div className="flex flex-wrap gap-3">
-            <Button
-              variant="outline"
-              onClick={() =>
-                downloadCsvFile(
-                  'examguard-sessions-report.csv',
-                  ['Session ID', 'Student', 'Email', 'Exam', 'Status', 'Score', 'Trust Score'],
-                  data.sessions.map((s) => [
-                    s.id,
-                    s.studentName,
-                    s.studentEmail,
-                    s.examTitle,
-                    s.status,
-                    s.score ?? 'N/A',
-                    s.trustScore,
-                  ])
-                )
-              }
-            >
-              <Download className="h-4 w-4" />
-              Export Sessions CSV
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() =>
-                downloadCsvFile(
-                  'examguard-audit-logs.csv',
-                  ['ID', 'Action', 'Actor', 'Entity', 'Created At'],
-                  data.auditLogs.map((a) => [
-                    a.id,
-                    a.action,
-                    a.actorName,
-                    a.entityType || 'system',
-                    a.createdAt,
-                  ])
-                )
-              }
-            >
-              <Download className="h-4 w-4" />
-              Export Audit Logs CSV
-            </Button>
-          </div>
-
+          <ReportingWorkspace />
           <ChartCard title="Institutional Activity Summary" subtitle="Real record counts">
             <DistributionBarChart data={usageAnalyticsSeries} valueLabel="Records" />
           </ChartCard>
@@ -920,93 +813,7 @@ export function AdminWorkspace({
 
       {/* INTEGRATIONS */}
       {section === 'integrations' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-5 rounded-xl border border-[#243249] bg-[#111B2D] p-6 space-y-4">
-            <h3 className="font-heading text-base font-semibold text-[#F8FAFC]">
-              Add / Update Connector
-            </h3>
-            <form onSubmit={handleSaveIntegration} className="space-y-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="int-type">Category</Label>
-                <select
-                  id="int-type"
-                  value={intType}
-                  onChange={(e) =>
-                    setIntType(e.target.value as IntegrationConfigView['integrationType'])
-                  }
-                  className="h-9 w-full rounded-lg border border-[#243249] bg-[#0B1220] px-3 text-sm text-[#F8FAFC]"
-                >
-                  <option value="lms">LMS (LTI 1.3)</option>
-                  <option value="sso">SSO / SAML 2.0</option>
-                  <option value="notification">Webhook Notification</option>
-                  <option value="analytics">Analytics Export</option>
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="int-provider">Provider Name</Label>
-                <Input
-                  id="int-provider"
-                  required
-                  value={intProvider}
-                  onChange={(e) => setIntProvider(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="int-endpoint">Endpoint / Issuer URL</Label>
-                <Input
-                  id="int-endpoint"
-                  value={intEndpoint}
-                  onChange={(e) => setIntEndpoint(e.target.value)}
-                  placeholder="https://lms.university.edu/lti"
-                />
-              </div>
-              <Button type="submit" disabled={savingInt} className="w-full">
-                {savingInt && <Loader2 className="h-4 w-4 animate-spin" />}
-                Save Integration Config
-              </Button>
-            </form>
-          </div>
-
-          <div className="lg:col-span-7">
-            <DataTable
-              data={data.integrations}
-              columns={[
-                {
-                  key: 'provider',
-                  header: 'Provider',
-                  render: (i) => (
-                    <div>
-                      <p className="font-medium text-[#F8FAFC]">{i.providerName}</p>
-                      <p className="text-xs font-mono text-[#94A3B8]">{i.configSummary}</p>
-                    </div>
-                  ),
-                },
-                {
-                  key: 'type',
-                  header: 'Type',
-                  render: (i) => (
-                    <StatusBadge tone="purple" className="uppercase text-[10px]">
-                      {i.integrationType}
-                    </StatusBadge>
-                  ),
-                },
-                {
-                  key: 'status',
-                  header: 'Status',
-                  render: (i) => (
-                    <StatusBadge tone={i.isActive ? 'success' : 'neutral'}>
-                      {i.isActive ? 'Configured' : 'Disabled'}
-                    </StatusBadge>
-                  ),
-                },
-              ]}
-              getRowKey={(i) => i.id}
-              searchable={false}
-              emptyTitle="No External Integrations Configured"
-              emptyDescription="Configure Canvas, Moodle, or institutional SSO endpoints on the left."
-            />
-          </div>
-        </div>
+        <IntegrationHub questions={data.questions} onUpdated={refresh} />
       )}
 
       {/* SECURITY POLICIES */}
@@ -1085,38 +892,7 @@ export function AdminWorkspace({
       )}
 
       {/* AUDIT LOGS */}
-      {section === 'audit-logs' && (
-        <DataTable
-          data={data.auditLogs}
-          columns={auditColumns}
-          getRowKey={(a) => a.id}
-          searchPlaceholder="Filter audit actions or actors..."
-          toolbarActions={
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                downloadCsvFile(
-                  'audit-logs.csv',
-                  ['ID', 'Action', 'Actor', 'Entity', 'Timestamp'],
-                  data.auditLogs.map((a) => [
-                    a.id,
-                    a.action,
-                    a.actorName,
-                    a.entityType || 'system',
-                    a.createdAt,
-                  ])
-                )
-              }
-            >
-              <Download className="h-3.5 w-3.5" />
-              Export CSV
-            </Button>
-          }
-          emptyTitle="No Audit Logs Yet"
-          emptyDescription="Every privileged mutation is recorded automatically in audit_logs."
-        />
-      )}
+      {section === 'audit-logs' && <AuditLogsPanel initialLogs={data.auditLogs} />}
 
       {/* SETTINGS */}
       {section === 'settings' && (

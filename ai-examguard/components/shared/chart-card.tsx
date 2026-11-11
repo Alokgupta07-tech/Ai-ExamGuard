@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { motion, useReducedMotion } from 'motion/react';
 import { BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { EmptyState } from './empty-state';
@@ -34,10 +35,16 @@ export function ChartCard({
   children,
   className,
 }: ChartCardProps) {
+  const prefersReducedMotion = useReducedMotion();
+
   return (
-    <div
+    <motion.div
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
+      whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        'rounded-lg border border-border bg-card p-5 flex flex-col',
+        'rounded-lg border border-border bg-card p-5 flex flex-col card-hover-elevate',
         className
       )}
     >
@@ -71,7 +78,7 @@ export function ChartCard({
           {footer}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 

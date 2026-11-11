@@ -4,6 +4,7 @@ import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import {
   Activity,
   ArrowRight,
@@ -17,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/shared/status-badge';
+import { AnimatedCounter } from '@/components/shared/animated-counter';
 import { EventTimeline, type TimelineEventItem } from '@/components/shared/event-timeline';
 
 gsap.registerPlugin(useGSAP);
@@ -135,29 +137,43 @@ const WORKSPACE_PORTALS = [
 export function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scenario, setScenario] = useState<PreviewScenario>('nominal');
+  const prefersReducedMotion = useReducedMotion();
 
   useGSAP(
     () => {
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       if (reducedMotion) return;
 
-      gsap.from('.hero-stagger', {
-        y: 18,
-        opacity: 0,
-        duration: 0.6,
-        stagger: 0.08,
-        ease: 'power3.out',
-        clearProps: 'transform,opacity',
-      });
+      const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
 
-      gsap.from('.hero-console', {
-        y: 22,
+      tl.from('.hero-headline-line', {
+        yPercent: 105,
         opacity: 0,
-        duration: 0.75,
-        delay: 0.18,
-        ease: 'power3.out',
+        duration: 0.65,
+        stagger: 0.08,
         clearProps: 'transform,opacity',
-      });
+      })
+        .from(
+          '.hero-stagger',
+          {
+            y: 16,
+            opacity: 0,
+            duration: 0.5,
+            stagger: 0.07,
+            clearProps: 'transform,opacity',
+          },
+          '-=0.38'
+        )
+        .from(
+          '.hero-console',
+          {
+            y: 22,
+            opacity: 0,
+            duration: 0.65,
+            clearProps: 'transform,opacity',
+          },
+          '-=0.4'
+        );
     },
     { scope: containerRef }
   );
@@ -167,9 +183,19 @@ export function HeroSection() {
   return (
     <section
       ref={containerRef}
-      className="relative border-b border-border bg-background py-14 sm:py-20 lg:py-24"
+      className="relative overflow-hidden border-b border-border bg-background py-14 sm:py-20 lg:py-24"
     >
-      <div className="mx-auto max-w-7xl px-4 sm:px-8">
+      {/* Subtle animated cyber grid & radial lighting (CSS-only, non-blocking) */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-cyber-grid opacity-55"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-radial-cyber"
+      />
+
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start">
           {/* Left Column: Value Proposition */}
           <div className="lg:col-span-6 space-y-6 pt-2">
@@ -177,9 +203,15 @@ export function HeroSection() {
               Edge-first assessment telemetry · Zero raw video retention
             </p>
 
-            <h1 className="hero-stagger font-heading text-4xl sm:text-5xl xl:text-[3.25rem] font-bold tracking-tight text-foreground leading-[1.06]">
-              Examinations,{' '}
-              <span className="text-primary">Protected by Intelligence.</span>
+            <h1 className="font-heading text-4xl sm:text-5xl xl:text-[3.25rem] font-bold tracking-tight text-foreground leading-[1.06]">
+              <span className="block overflow-hidden">
+                <span className="hero-headline-line block">Examinations,</span>
+              </span>
+              <span className="block overflow-hidden">
+                <span className="hero-headline-line block text-primary">
+                  Protected by Intelligence.
+                </span>
+              </span>
             </h1>
 
             <p className="hero-stagger text-base sm:text-lg text-muted-foreground max-w-xl leading-relaxed">
@@ -270,7 +302,7 @@ export function HeroSection() {
                     <Activity className="h-3.5 w-3.5 text-primary" />
                   </div>
                   <p className="font-mono text-xl font-bold tabular-nums text-foreground">
-                    {active.trustScore}
+                    <AnimatedCounter value={active.trustScore} />
                     <span className="text-xs font-normal text-muted-foreground">/100</span>
                   </p>
                 </div>
@@ -296,9 +328,19 @@ export function HeroSection() {
                 </div>
               </div>
 
-              {/* Real EventTimeline Component */}
+              {/* Real EventTimeline Component with Motion preview transition */}
               <div className="p-4 sm:p-5 space-y-4">
-                <EventTimeline events={active.events} />
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={scenario}
+                    initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={prefersReducedMotion ? undefined : { opacity: 0, y: -6 }}
+                    transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <EventTimeline events={active.events} />
+                  </motion.div>
+                </AnimatePresence>
 
                 <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1.5">

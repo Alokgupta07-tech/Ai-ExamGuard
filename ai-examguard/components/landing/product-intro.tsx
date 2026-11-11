@@ -1,5 +1,6 @@
 import React from 'react';
 import { BookOpen, Eye, GraduationCap, ShieldCheck } from 'lucide-react';
+import { ScrollRevealGroup } from '@/components/landing/scroll-reveal';
 
 const ROLES = [
   {
@@ -45,8 +46,8 @@ export function ProductIntroSection() {
       id="overview"
       className="border-b border-border bg-sidebar py-16 sm:py-20 px-4 sm:px-8"
     >
-      <div className="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-        <div className="lg:col-span-4 space-y-4">
+      <ScrollRevealGroup className="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+        <div className="reveal-item lg:col-span-4 space-y-4">
           <p className="text-xs font-medium text-primary">
             Unified examination ecosystem
           </p>
@@ -66,7 +67,7 @@ export function ProductIntroSection() {
             return (
               <div
                 key={item.role}
-                className="bg-card p-6 flex flex-col justify-between gap-4 hover:bg-surface-elevated transition-colors"
+                className="reveal-item card-hover-elevate bg-card p-6 flex flex-col justify-between gap-4 hover:bg-surface-elevated transition-colors"
               >
                 <div className="flex items-center justify-between gap-2">
                   <div
@@ -91,7 +92,7 @@ export function ProductIntroSection() {
             );
           })}
         </div>
-      </div>
+      </ScrollRevealGroup>
     </section>
   );
 }

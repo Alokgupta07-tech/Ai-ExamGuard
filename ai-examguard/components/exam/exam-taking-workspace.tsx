@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { AlertTriangle, ArrowLeft, Loader2, ShieldAlert, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/shared/modal';
@@ -68,6 +69,7 @@ function writeOutbox(
 }
 
 export function ExamTakingWorkspace({ examId }: { examId: string }) {
+  const prefersReducedMotion = useReducedMotion();
   const [bootstrapping, setBootstrapping] = useState(true);
   const [bootstrapError, setBootstrapError] = useState<string | null>(null);
 
@@ -691,20 +693,30 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
 
         <main className="flex-1 min-w-0 px-4 py-6 sm:px-8 sm:py-8">
           {currentQuestion ? (
-            <QuestionStage
-              question={currentQuestion}
-              questionNumber={currentIndex + 1}
-              totalQuestions={paper.questions.length}
-              selectedOptionId={answersMap[currentQuestion.id] ?? null}
-              isFlagged={flaggedSet.has(currentQuestion.id)}
-              negativeMarking={paper.negativeMarking}
-              onSelectOption={handleSelectOption}
-              onToggleFlag={handleToggleFlag}
-              onPrevious={() => navigateToIndex(currentIndex - 1)}
-              onNext={() => navigateToIndex(currentIndex + 1)}
-              hasPrevious={currentIndex > 0}
-              hasNext={currentIndex < paper.questions.length - 1}
-            />
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={currentQuestion.id}
+                initial={prefersReducedMotion ? false : { opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={prefersReducedMotion ? undefined : { opacity: 0, x: -10 }}
+                transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <QuestionStage
+                  question={currentQuestion}
+                  questionNumber={currentIndex + 1}
+                  totalQuestions={paper.questions.length}
+                  selectedOptionId={answersMap[currentQuestion.id] ?? null}
+                  isFlagged={flaggedSet.has(currentQuestion.id)}
+                  negativeMarking={paper.negativeMarking}
+                  onSelectOption={handleSelectOption}
+                  onToggleFlag={handleToggleFlag}
+                  onPrevious={() => navigateToIndex(currentIndex - 1)}
+                  onNext={() => navigateToIndex(currentIndex + 1)}
+                  hasPrevious={currentIndex > 0}
+                  hasNext={currentIndex < paper.questions.length - 1}
+                />
+              </motion.div>
+            </AnimatePresence>
           ) : (
             <ErrorState
               title="No Questions Loaded"

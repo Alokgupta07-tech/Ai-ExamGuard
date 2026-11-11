@@ -2,24 +2,25 @@
 
 import React, { useMemo, useState } from 'react';
 import {
-  Activity,
   AlertTriangle,
   Camera,
-  Download,
   Eye,
   Layers,
   Mic,
   RefreshCw,
-  ShieldAlert,
   UserCheck,
 } from 'lucide-react';
 import { useDashboardData } from '@/hooks/use-dashboard-data';
+import { useMonitoringRealtime } from '@/hooks/use-monitoring-realtime';
 import { getInvigilatorDashboardAction } from '@/lib/actions/dashboard-actions';
 import {
-  downloadCsvFile,
+  formatRiskCategoryLabel,
   formatShortDateTime,
+  getEventOriginMeta,
+  getEventReviewStatusTone,
   getExamStatusTone,
   getReviewStatusTone,
+  getRiskCategoryTone,
   getSessionStatusTone,
   mapSeverityToTimeline,
 } from '@/lib/utils/dashboard-formatters';
@@ -30,11 +31,13 @@ import { ChartCard } from '@/components/shared/chart-card';
 import { DistributionBarChart } from '@/components/shared/telemetry-charts';
 import { EventTimeline } from '@/components/shared/event-timeline';
 import { StatusBadge } from '@/components/shared/status-badge';
-import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
 import { Button } from '@/components/ui/button';
 import { ReviewInspectionDrawer } from '@/components/dashboards/shared/review-inspection-drawer';
+import { ReportingWorkspace } from '@/components/dashboards/admin/reporting-workspace';
+import { CandidateDetailDrawer } from '@/components/dashboards/invigilator/candidate-detail-drawer';
+import { InvigilatorCommandCentre } from '@/components/dashboards/invigilator/command-centre';
 import type { EventSeverity } from '@/types/database';
 import type { ExamView, ProctorEventView, ReviewCaseView, SessionView } from '@/types/dashboard';
 
@@ -49,8 +52,21 @@ export type InvigilatorSection =
 
 export function InvigilatorWorkspace({ section }: { section: InvigilatorSection }) {
   const { data, isLoading, error, refresh } = useDashboardData(getInvigilatorDashboardAction);
+  const { connectionStatus: realtimeStatus } = useMonitoringRealtime({
+    tenantId: data?.tenantId ?? null,
+    enabled: Boolean(data?.tenantId),
+    onUpdate: refresh,
+  });
   const [selectedCase, setSelectedCase] = useState<ReviewCaseView | null>(null);
+  const [inspectedCandidate, setInspectedCandidate] = useState<{
+    session: SessionView;
+    eventId?: string | null;
+  } | null>(null);
   const [severityFilter, setSeverityFilter] = useState<EventSeverity | 'all'>('all');
+
+  const handleInspectCandidate = (session: SessionView, eventId?: string | null) => {
+    setInspectedCandidate({ session, eventId: eventId ?? null });
+  };
 
   const alertBreakdown = useMemo(() => {
     if (!data) return [];
@@ -157,16 +173,31 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
       sortValue: (s) => s.trustScore,
       render: (s) => (
         <span
-          className={`font-mono text-sm font-bold ${
-            s.trustScore >= 80
-              ? 'text-[#22C55E]'
-              : s.trustScore >= 60
+          className={`font-mono text-sm font-bold ${s.trustScore >= 80
+            ? 'text-[#22C55E]'
+            : s.trustScore >= 60
               ? 'text-[#F59E0B]'
               : 'text-[#EF4444]'
-          }`}
+            }`}
         >
           {s.trustScore.toFixed(0)}%
         </span>
+      ),
+    },
+    {
+      key: 'risk',
+      header: 'Risk Category',
+      sortable: true,
+      sortValue: (s) => s.riskScore,
+      render: (s) => (
+        <div className="flex items-center gap-2">
+          <StatusBadge tone={getRiskCategoryTone(s.riskCategory)}>
+            {formatRiskCategoryLabel(s.riskCategory)}
+          </StatusBadge>
+          <span className="font-mono text-xs text-muted-foreground tabular-nums">
+            {s.riskScore.toFixed(0)}/100
+          </span>
+        </div>
       ),
     },
     {
@@ -178,20 +209,51 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
         </StatusBadge>
       ),
     },
+    {
+      key: 'inspect',
+      header: 'Details',
+      render: (s) => (
+        <Button
+          type="button"
+          size="xs"
+          variant="outline"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleInspectCandidate(s);
+          }}
+        >
+          <Eye className="h-3.5 w-3.5" />
+          Inspect
+        </Button>
+      ),
+    },
   ];
 
   const alertColumns: DataTableColumn<ProctorEventView>[] = [
     {
       key: 'event',
-      header: 'Signal',
-      render: (ev) => (
-        <div>
-          <p className="font-medium text-[#F8FAFC]">{ev.eventType.replace(/_/g, ' ')}</p>
-          <p className="text-xs text-[#94A3B8]">
-            {ev.studentName} • {ev.examTitle}
-          </p>
-        </div>
-      ),
+      header: 'Signal & Explanation',
+      render: (ev) => {
+        const origin = getEventOriginMeta(ev.eventOrigin, ev.isSimulated);
+        return (
+          <div className="max-w-md space-y-0.5">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <p className="font-medium text-foreground">
+                {ev.eventType.replace(/_/g, ' ')}{' '}
+                <span className="font-mono text-[11px] text-muted-foreground">({ev.sourceModule})</span>
+              </p>
+              <StatusBadge tone={origin.tone}>{origin.label}</StatusBadge>
+              <StatusBadge tone={getEventReviewStatusTone(ev.reviewStatus)}>
+                {ev.reviewStatus.replace(/_/g, ' ')}
+              </StatusBadge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {ev.studentName} • {ev.examTitle}
+            </p>
+            <p className="text-xs text-foreground/80 line-clamp-2">{ev.explanation}</p>
+          </div>
+        );
+      },
     },
     {
       key: 'severity',
@@ -202,8 +264,8 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
             ev.severity === 'critical' || ev.severity === 'high'
               ? 'critical'
               : ev.severity === 'medium'
-              ? 'warning'
-              : 'teal'
+                ? 'warning'
+                : 'teal'
           }
           pulse={ev.severity === 'critical'}
           className="uppercase text-[10px]"
@@ -216,7 +278,7 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
       key: 'confidence',
       header: 'Confidence',
       render: (ev) => (
-        <span className="font-mono text-xs text-[#94A3B8]">
+        <span className="font-mono text-xs text-muted-foreground">
           {ev.confidence !== null ? `${Math.round(ev.confidence * 100)}%` : 'Rule Trigger'}
         </span>
       ),
@@ -225,10 +287,29 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
       key: 'time',
       header: 'Detected',
       render: (ev) => (
-        <span className="font-mono text-xs text-[#94A3B8]">
+        <span className="font-mono text-xs text-muted-foreground">
           {formatShortDateTime(ev.createdAt)}
         </span>
       ),
+    },
+    {
+      key: 'actions',
+      header: 'Review',
+      render: (ev) => {
+        const session = data.sessions.find((s) => s.id === ev.sessionId);
+        return (
+          <Button
+            type="button"
+            size="xs"
+            variant="outline"
+            disabled={!session}
+            onClick={() => session && handleInspectCandidate(session, ev.id)}
+          >
+            <Eye className="h-3.5 w-3.5" />
+            Open Event
+          </Button>
+        );
+      },
     },
   ];
 
@@ -269,9 +350,26 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
         title={HEADER_META[section].title}
         description={HEADER_META[section].desc}
         badge={
-          <StatusBadge tone="purple" pulse>
-            Invigilation Active
-          </StatusBadge>
+          <div className="flex items-center gap-2">
+            <StatusBadge tone="purple" pulse>
+              Invigilation Active
+            </StatusBadge>
+            <StatusBadge
+              tone={
+                realtimeStatus === 'live'
+                  ? 'success'
+                  : realtimeStatus === 'reconnecting'
+                    ? 'warning'
+                    : 'neutral'
+              }
+            >
+              {realtimeStatus === 'live'
+                ? 'Realtime Live'
+                : realtimeStatus === 'reconnecting'
+                  ? 'Reconnecting'
+                  : 'Syncing Stream'}
+            </StatusBadge>
+          </div>
         }
         actions={
           <Button variant="outline" size="sm" onClick={refresh}>
@@ -366,71 +464,12 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
             </div>
           </div>
 
-          {/* Recent Events + Review Triage */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-7 space-y-3">
-              <h2 className="font-heading text-lg font-semibold text-[#F8FAFC] flex items-center gap-2">
-                <Activity className="h-4 w-4 text-[#38BDF8]" />
-                Recent Telemetry Events
-              </h2>
-              <EventTimeline
-                events={data.proctorEvents.slice(0, 6).map((ev) => ({
-                  id: ev.id,
-                  title: `${ev.studentName} • ${ev.eventType.replace(/_/g, ' ')}`,
-                  description: ev.examTitle,
-                  timestamp: formatShortDateTime(ev.createdAt),
-                  severity: mapSeverityToTimeline(ev.severity),
-                  category: ev.eventType.includes('FACE')
-                    ? 'camera'
-                    : ev.eventType.includes('AUDIO')
-                    ? 'audio'
-                    : 'browser',
-                }))}
-                emptyTitle="No Anomalies Detected"
-                emptyDescription="All active candidate telemetry feeds are currently nominal."
-              />
-            </div>
-
-            <div className="lg:col-span-5 space-y-3">
-              <h2 className="font-heading text-lg font-semibold text-[#F8FAFC] flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4 text-[#F59E0B]" />
-                Priority Review Cases
-              </h2>
-              {data.reviewCases.length === 0 ? (
-                <EmptyState
-                  title="Review Queue Clear"
-                  description="No candidate sessions currently require invigilator adjudication."
-                  icon={<UserCheck className="h-5 w-5" />}
-                />
-              ) : (
-                <div className="space-y-3">
-                  {data.reviewCases.slice(0, 5).map((rc) => (
-                    <div
-                      key={rc.id}
-                      className="rounded-xl border border-[#243249] bg-[#111B2D] p-4 flex items-center justify-between gap-3"
-                    >
-                      <div className="min-w-0 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm text-[#F8FAFC] truncate">
-                            {rc.studentName}
-                          </span>
-                          <StatusBadge tone={getReviewStatusTone(rc.status)}>
-                            {rc.status}
-                          </StatusBadge>
-                        </div>
-                        <p className="text-xs text-[#94A3B8] truncate">
-                          {rc.examTitle} • Trust {rc.trustScore.toFixed(0)}%
-                        </p>
-                      </div>
-                      <Button size="xs" variant="outline" onClick={() => setSelectedCase(rc)}>
-                        Inspect
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          {/* 4-Panel Live Invigilator Command Centre */}
+          <InvigilatorCommandCentre
+            data={data}
+            onInspectCandidate={handleInspectCandidate}
+            onRefresh={refresh}
+          />
         </div>
       )}
 
@@ -449,6 +488,7 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
           data={data.sessions}
           columns={candidateColumns}
           getRowKey={(s) => s.id}
+          onRowClick={(s) => handleInspectCandidate(s)}
           emptyTitle="No Active Candidates"
           emptyDescription="Live candidate camera, mic, and trust scores appear once sessions start."
         />
@@ -466,11 +506,10 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
                   key={sev}
                   type="button"
                   onClick={() => setSeverityFilter(sev)}
-                  className={`rounded-lg border px-2.5 py-1 text-xs uppercase font-mono cursor-pointer ${
-                    severityFilter === sev
-                      ? 'border-[#38BDF8]/50 bg-[#38BDF8]/15 text-[#38BDF8]'
-                      : 'border-[#243249] bg-[#111B2D] text-[#94A3B8]'
-                  }`}
+                  className={`rounded-lg border px-2.5 py-1 text-xs uppercase font-mono cursor-pointer ${severityFilter === sev
+                    ? 'border-[#38BDF8]/50 bg-[#38BDF8]/15 text-[#38BDF8]'
+                    : 'border-[#243249] bg-[#111B2D] text-[#94A3B8]'
+                    }`}
                 >
                   {sev}
                 </button>
@@ -487,16 +526,15 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
           events={data.proctorEvents.map((ev) => ({
             id: ev.id,
             title: `${ev.studentName} • ${ev.eventType.replace(/_/g, ' ')}`,
-            description: `${ev.examTitle} — ${
-              (ev.details?.reason as string | undefined) || 'Explainable edge signal captured.'
-            }`,
-            timestamp: formatShortDateTime(ev.createdAt),
+            description: `${ev.examTitle} — ${ev.explanation}`,
+            timestamp: formatShortDateTime(ev.occurredAt || ev.createdAt),
             severity: mapSeverityToTimeline(ev.severity),
-            category: ev.eventType.includes('FACE')
-              ? 'camera'
-              : ev.eventType.includes('AUDIO')
-              ? 'audio'
-              : 'browser',
+            category:
+              ev.sourceModule === 'mediapipe_face'
+                ? 'camera'
+                : ev.sourceModule === 'web_audio'
+                  ? 'audio'
+                  : 'browser',
           }))}
           emptyTitle="Timeline Empty"
           emptyDescription="Proctoring events across sessions will appear chronologically here."
@@ -532,6 +570,15 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
               ),
             },
             {
+              key: 'risk',
+              header: 'Risk Category',
+              render: (rc) => (
+                <StatusBadge tone={getRiskCategoryTone(rc.riskCategory)}>
+                  {formatRiskCategoryLabel(rc.riskCategory)}
+                </StatusBadge>
+              ),
+            },
+            {
               key: 'status',
               header: 'Status',
               render: (rc) => (
@@ -559,29 +606,7 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
 
       {section === 'reports' && (
         <div className="space-y-6">
-          <div className="flex justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                downloadCsvFile(
-                  'invigilator-events-report.csv',
-                  ['Event ID', 'Candidate', 'Exam', 'Signal', 'Severity', 'Timestamp'],
-                  data.proctorEvents.map((ev) => [
-                    ev.id,
-                    ev.studentName,
-                    ev.examTitle,
-                    ev.eventType,
-                    ev.severity,
-                    ev.createdAt,
-                  ])
-                )
-              }
-            >
-              <Download className="h-3.5 w-3.5" />
-              Export Incident Log CSV
-            </Button>
-          </div>
+          <ReportingWorkspace titlePrefix="Invigilation Reports & Incident Analytics" />
 
           <ChartCard
             title="Proctor Signal Severity Distribution"
@@ -597,6 +622,28 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
         reviewCase={selectedCase}
         onClose={() => setSelectedCase(null)}
         onActionRecorded={refresh}
+      />
+
+      <CandidateDetailDrawer
+        session={inspectedCandidate?.session ?? null}
+        initialEventId={inspectedCandidate?.eventId ?? null}
+        initialEvents={
+          inspectedCandidate
+            ? data.proctorEvents.filter((e) => e.sessionId === inspectedCandidate.session.id)
+            : []
+        }
+        initialReviewCase={
+          inspectedCandidate
+            ? data.reviewCases.find((rc) => rc.sessionId === inspectedCandidate.session.id) ?? null
+            : null
+        }
+        initialReviewActions={
+          inspectedCandidate
+            ? data.reviewActions.filter((a) => a.sessionId === inspectedCandidate.session.id)
+            : []
+        }
+        onClose={() => setInspectedCandidate(null)}
+        onUpdated={refresh}
       />
     </div>
   );

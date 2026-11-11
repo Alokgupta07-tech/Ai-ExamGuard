@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useSyncExternalStore } from 'react';
+import { useReducedMotion } from 'motion/react';
 import {
   Area,
   AreaChart,
@@ -80,9 +81,10 @@ export function ActivityAreaChart({
   secondaryLabel?: string;
 }) {
   const mounted = useIsClient();
+  const prefersReducedMotion = useReducedMotion();
 
   if (!mounted) {
-    return <div className="h-full w-full rounded-md bg-surface-elevated/30 animate-pulse" />;
+    return <div className="h-full w-full rounded-md bg-surface-elevated/30 skeleton-shimmer" />;
   }
 
   return (
@@ -122,6 +124,8 @@ export function ActivityAreaChart({
           strokeWidth={2}
           fillOpacity={1}
           fill="url(#cyanAreaFill)"
+          isAnimationActive={!prefersReducedMotion}
+          animationDuration={650}
         />
         {data.some((d) => d.secondary !== undefined) && (
           <Area
@@ -132,6 +136,8 @@ export function ActivityAreaChart({
             strokeWidth={2}
             fillOpacity={1}
             fill="url(#tealAreaFill)"
+            isAnimationActive={!prefersReducedMotion}
+            animationDuration={750}
           />
         )}
       </AreaChart>
@@ -152,9 +158,10 @@ export function DistributionBarChart({
   barColor?: string;
 }) {
   const mounted = useIsClient();
+  const prefersReducedMotion = useReducedMotion();
 
   if (!mounted) {
-    return <div className="h-full w-full rounded-lg bg-surface-elevated/30 animate-pulse" />;
+    return <div className="h-full w-full rounded-lg bg-surface-elevated/30 skeleton-shimmer" />;
   }
 
   return (
@@ -176,7 +183,15 @@ export function DistributionBarChart({
           allowDecimals={false}
         />
         <Tooltip content={<TelemetryTooltip />} />
-        <Bar dataKey="value" name={valueLabel} fill={barColor} radius={[6, 6, 0, 0]} maxBarSize={44} />
+        <Bar
+          dataKey="value"
+          name={valueLabel}
+          fill={barColor}
+          radius={[6, 6, 0, 0]}
+          maxBarSize={44}
+          isAnimationActive={!prefersReducedMotion}
+          animationDuration={650}
+        />
       </BarChart>
     </ResponsiveContainer>
   );

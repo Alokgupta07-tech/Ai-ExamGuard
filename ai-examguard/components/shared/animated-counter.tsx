@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { animate, useMotionValue, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/utils';
 
@@ -14,7 +14,8 @@ export interface AnimatedCounterProps {
 }
 
 /**
- * Smoothly animates numeric values with Motion while respecting reduced-motion settings.
+ * Smoothly animates numeric values with Motion while respecting reduced-motion settings
+ * and avoiding SSR/client hydration mismatches.
  */
 export function AnimatedCounter({
   value,
@@ -25,16 +26,19 @@ export function AnimatedCounter({
   className,
 }: AnimatedCounterProps) {
   const prefersReducedMotion = useReducedMotion();
-  const motionValue = useMotionValue(prefersReducedMotion ? value : 0);
-  const [displayValue, setDisplayValue] = useState<string>(() =>
-    (prefersReducedMotion ? value : 0).toFixed(decimals)
-  );
+  const motionValue = useMotionValue(value);
+  const prevValueRef = useRef<number | null>(null);
+  const [displayValue, setDisplayValue] = useState<string>(() => value.toFixed(decimals));
 
   useEffect(() => {
+    const startVal = prevValueRef.current === null ? 0 : prevValueRef.current;
+    prevValueRef.current = value;
+
     if (prefersReducedMotion) {
       return;
     }
 
+    motionValue.set(startVal);
     const controls = animate(motionValue, value, {
       duration,
       ease: [0.16, 1, 0.3, 1],

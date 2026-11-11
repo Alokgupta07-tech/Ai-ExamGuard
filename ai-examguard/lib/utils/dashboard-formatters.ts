@@ -1,6 +1,7 @@
 import type { StatusTone } from '@/components/shared/status-badge';
 import type { TimelineSeverity } from '@/components/shared/event-timeline';
 import type { EventSeverity, ExamStatus, ReviewStatus, SessionStatus, UserRole } from '@/types/database';
+import type { EventOrigin, EventReviewStatus, RiskCategory } from '@/types/proctoring';
 
 export function formatShortDateTime(iso: string | null | undefined): string {
   if (!iso) return '—';
@@ -72,6 +73,58 @@ export function getReviewStatusTone(status: ReviewStatus): StatusTone {
       return 'critical';
     default:
       return 'neutral';
+  }
+}
+
+export function getRiskCategoryTone(category: RiskCategory): StatusTone {
+  switch (category) {
+    case 'PRIORITY_REVIEW':
+      return 'critical';
+    case 'REVIEW_SUGGESTED':
+      return 'warning';
+    case 'NORMAL':
+    default:
+      return 'success';
+  }
+}
+
+export function formatRiskCategoryLabel(category: RiskCategory): string {
+  switch (category) {
+    case 'PRIORITY_REVIEW':
+      return 'PRIORITY REVIEW';
+    case 'REVIEW_SUGGESTED':
+      return 'REVIEW SUGGESTED';
+    case 'NORMAL':
+    default:
+      return 'NORMAL';
+  }
+}
+
+export function getEventOriginMeta(
+  origin: EventOrigin | undefined,
+  isSimulated?: boolean
+): { label: string; tone: StatusTone } {
+  if (isSimulated || origin === 'simulated_demo') {
+    return { label: 'Simulated Demo', tone: 'purple' };
+  }
+  if (origin === 'ai_detection') {
+    return { label: 'Live AI Detection', tone: 'info' };
+  }
+  return { label: 'Browser Telemetry', tone: 'teal' };
+}
+
+export function getEventReviewStatusTone(status: EventReviewStatus): StatusTone {
+  switch (status) {
+    case 'dismissed':
+    case 'cleared':
+      return 'neutral';
+    case 'acknowledged':
+      return 'success';
+    case 'flagged':
+      return 'critical';
+    case 'pending_review':
+    default:
+      return 'warning';
   }
 }
 

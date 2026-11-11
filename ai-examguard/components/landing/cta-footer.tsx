@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ScrollRevealGroup } from '@/components/landing/scroll-reveal';
 
 /**
  * Closing call-to-action band and clean institutional footer.
@@ -9,19 +10,20 @@ import { Button } from '@/components/ui/button';
 export function CtaFooterSection() {
   return (
     <>
-      <section className="bg-background py-16 sm:py-20 px-4 sm:px-8">
-        <div className="mx-auto max-w-4xl text-center space-y-5">
-          <p className="text-xs font-medium text-primary">
+      <section className="relative overflow-hidden bg-background py-16 sm:py-20 px-4 sm:px-8">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-radial-cyber opacity-70" />
+        <ScrollRevealGroup className="relative z-10 mx-auto max-w-4xl text-center space-y-5">
+          <p className="reveal-item text-xs font-medium text-primary">
             Ready for institutional deployment
           </p>
-          <h2 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+          <h2 className="reveal-item font-heading text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
             Protect academic integrity without sacrificing student trust
           </h2>
-          <p className="text-base text-muted-foreground max-w-2xl mx-auto">
+          <p className="reveal-item text-base text-muted-foreground max-w-2xl mx-auto">
             Create an institutional workspace or sign in to explore the Administrator, Faculty,
             Invigilator, and Student portals.
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-3.5 pt-2">
+          <div className="reveal-item flex flex-wrap items-center justify-center gap-3.5 pt-2">
             <Button asChild size="lg">
               <Link href="/signup" className="flex items-center gap-2">
                 <span>Provision university account</span>
@@ -32,7 +34,7 @@ export function CtaFooterSection() {
               <Link href="/login">Sign in to portal</Link>
             </Button>
           </div>
-        </div>
+        </ScrollRevealGroup>
       </section>
 
       <footer className="border-t border-border bg-sidebar py-8 px-4 sm:px-8">

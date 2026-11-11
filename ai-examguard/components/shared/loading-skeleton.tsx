@@ -14,7 +14,7 @@ export interface LoadingSkeletonProps {
 function PulseBlock({ className }: { className?: string }) {
   return (
     <div
-      className={cn('animate-pulse rounded-md bg-surface-elevated', className)}
+      className={cn('skeleton-shimmer rounded-md bg-surface-elevated', className)}
       aria-hidden="true"
     />
   );

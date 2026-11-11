@@ -36,19 +36,57 @@ const FORBIDDEN_MEDIA_KEYS = new Set([
   'speakerid',
 ])
 
+export const EVENT_SOURCE_MODULES = [
+  'mediapipe_face',
+  'web_audio',
+  'browser_visibility',
+  'server_session',
+] as const
+
+export const EVENT_REVIEW_STATUSES = [
+  'pending_review',
+  'acknowledged',
+  'cleared',
+  'flagged',
+  'dismissed',
+] as const
+
 export const proctorEventPayloadSchema = z
   .object({
+    clientEventId: z.string().uuid('clientEventId must be a valid UUID.'),
     sessionId: z.string().uuid().optional().nullable(),
     context: z.enum(['preflight', 'active_exam']).default('active_exam'),
     eventType: z.enum(PROCTOR_MONITORING_EVENT_TYPES),
+    sourceModule: z.enum(EVENT_SOURCE_MODULES).optional(),
+    timestamp: z.union([z.string().min(1), z.number().finite()]),
+    durationMs: z.number().int().min(0).max(3_600_000).optional().nullable(),
+    sustainedDurationMs: z.number().int().min(0).max(3_600_000).optional().nullable(),
+    modelVersion: z.string().trim().min(1).max(120).optional().nullable(),
     severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
-    confidence: z.number().min(0).max(1).default(0.9),
-    sustainedDurationMs: z.number().int().min(0).max(600_000).optional(),
+    confidence: z.number().min(0).max(1).optional().nullable(),
     details: z.record(z.string(), z.unknown()).optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
+  })
+  .strict()
+
+export const eventReviewUpdateSchema = z
+  .object({
+    reviewStatus: z.enum(EVENT_REVIEW_STATUSES),
+    reviewNote: z.string().trim().max(500).optional().nullable(),
+    escalate: z.boolean().optional(),
+  })
+  .strict()
+
+export const simulateDemoEventSchema = z
+  .object({
+    sessionId: z.string().uuid('sessionId must be a valid UUID.'),
+    eventType: z.enum(PROCTOR_MONITORING_EVENT_TYPES),
   })
   .strict()
 
 export type ProctorEventInput = z.infer<typeof proctorEventPayloadSchema>
+export type EventReviewUpdateInput = z.infer<typeof eventReviewUpdateSchema>
+export type SimulateDemoEventInput = z.infer<typeof simulateDemoEventSchema>
 
 export function assertNoRawFramePayload(rawBody: unknown): void {
   if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) return
