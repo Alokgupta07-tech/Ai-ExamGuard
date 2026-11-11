@@ -50,17 +50,44 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 2. Authenticated users accessing login or signup -> Redirect to role dashboard
-  if (user && isAuthRoute) {
-    let targetPath = '/student';
-
-    // Query user membership to determine role
+  // Helper to resolve user's roles from memberships with metadata fallback
+  const resolveUserRoles = async () => {
+    if (!user) return [] as string[];
     const { data: memberships } = await supabase
       .from('memberships')
       .select('role')
       .eq('user_id', user.id);
 
-    const roles = (memberships || []).map((m: { role: string }) => m.role);
+    const dbRoles = (memberships || []).map((m: { role: string }) => m.role);
+    if (dbRoles.length > 0) return dbRoles;
+
+    const metaRole = user.user_metadata?.role;
+    if (metaRole === 'faculty') return ['instructor'];
+    if (typeof metaRole === 'string' && metaRole.length > 0) return [metaRole];
+    return ['student'];
+  };
+
+  // 2. Enforce strict role isolation across protected dashboard routes
+  if (user && isProtectedRoute) {
+    const roles = await resolveUserRoles();
+    if (path.startsWith('/admin') && !roles.includes('admin')) {
+      return NextResponse.redirect(new URL('/unauthorized', request.url));
+    }
+    if ((path.startsWith('/faculty') || path.startsWith('/instructor')) && !roles.includes('instructor')) {
+      return NextResponse.redirect(new URL('/unauthorized', request.url));
+    }
+    if (path.startsWith('/invigilator') && !roles.includes('invigilator')) {
+      return NextResponse.redirect(new URL('/unauthorized', request.url));
+    }
+    if (path.startsWith('/student') && !roles.includes('student')) {
+      return NextResponse.redirect(new URL('/unauthorized', request.url));
+    }
+  }
+
+  // 3. Authenticated users accessing login or signup -> Redirect to role dashboard
+  if (user && isAuthRoute) {
+    let targetPath = '/student';
+    const roles = await resolveUserRoles();
     if (roles.includes('admin')) {
       targetPath = '/admin';
     } else if (roles.includes('instructor')) {
@@ -69,12 +96,6 @@ export async function middleware(request: NextRequest) {
       targetPath = '/invigilator';
     } else if (roles.includes('student')) {
       targetPath = '/student';
-    } else {
-      // Fallback to metadata
-      const metaRole = user.user_metadata?.role;
-      if (metaRole === 'admin') targetPath = '/admin';
-      else if (metaRole === 'instructor' || metaRole === 'faculty') targetPath = '/faculty';
-      else if (metaRole === 'invigilator') targetPath = '/invigilator';
     }
 
     return NextResponse.redirect(new URL(targetPath, request.url));

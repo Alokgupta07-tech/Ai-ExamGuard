@@ -14,4 +14,5 @@ export * from './profile-menu';
 export * from './review-drawer';
 export * from './stat-card';
 export * from './status-badge';
+export * from './telemetry-charts';
 
