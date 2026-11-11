@@ -11,11 +11,14 @@ SET search_path = ''
 AS $$
 DECLARE
   jwt_role TEXT := COALESCE(auth.role(), '');
-  db_role TEXT := COALESCE(current_user, '');
+  conn_role TEXT := COALESCE(session_user, '');
   is_staff BOOLEAN := FALSE;
 BEGIN
-  -- Allow privileged backend/service-role and database owner migrations
-  IF jwt_role = 'service_role' OR db_role IN ('postgres', 'supabase_admin') THEN
+  -- Allow privileged backend service_role and direct Postgres admin sessions without a user JWT.
+  -- Using session_user avoids the SECURITY DEFINER current_user='postgres' bypass while preventing
+  -- 'permission denied for schema private' for benign authenticated PostgREST updates.
+  IF jwt_role = 'service_role'
+     OR (auth.uid() IS NULL AND conn_role IN ('postgres', 'supabase_admin')) THEN
     RETURN NEW;
   END IF;
 
