@@ -30,3 +30,4 @@
 - **Routes**: `/invigilator`, `/invigilator/examinations`, `/invigilator/candidates`, `/invigilator/alerts`, `/invigilator/timeline`, `/invigilator/review-cases`, `/invigilator/reports`.
 - **Overview Widgets**: Active Candidates, Active Examinations, Review Required, High-Priority Alerts, Camera Connectivity telemetry bar, Microphone Connectivity telemetry bar, Recent Events Timeline, and Priority Review Cases.
 - **Working Actions**: Severity filtering, CSV Incident Export, and human-in-the-loop adjudication via `ReviewInspectionDrawer` (`Clear Case`, `Log Warning`, `Escalate`) logging `review_actions` and `audit_logs`.
+
