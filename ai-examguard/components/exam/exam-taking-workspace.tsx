@@ -13,7 +13,11 @@ import { QuestionStage } from '@/components/exam/question-stage';
 import { ExamBottomBar } from '@/components/exam/exam-bottom-bar';
 import { SubmissionConfirmation } from '@/components/exam/submission-confirmation';
 import { CameraMonitorPanel } from '@/components/proctoring/camera-monitor-panel';
+import { AudioMonitorPanel } from '@/components/proctoring/audio-monitor-panel';
+import { BrowserMonitorStatus } from '@/components/proctoring/browser-monitor-status';
 import { useCameraProctor } from '@/hooks/use-camera-proctor';
+import { useAudioProctor } from '@/hooks/use-audio-proctor';
+import { useBrowserMonitor } from '@/hooks/use-browser-monitor';
 import type { StudentExamPaper } from '@/types/exam-engine';
 import type {
   ActiveExamSessionState,
@@ -94,12 +98,6 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  // Browser monitoring status
-  const [fullscreenActive, setFullscreenActive] = useState<boolean>(() =>
-    typeof document !== 'undefined' ? Boolean(document.fullscreenElement) : false
-  );
-  const [visibilitySwitches, setVisibilitySwitches] = useState(0);
-
   // Refs for race-free auto-save & single-fire timeout submission
   const pendingQueueRef = useRef<Map<string, string | null>>(new Map());
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -110,6 +108,9 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
   const sessionIdRef = useRef<string | null>(null);
 
   const requireCameraForSession = paper?.settings?.require_camera !== false;
+  const requireAudioForSession = paper?.settings?.require_audio !== false;
+  const requireFullscreenForSession = paper?.settings?.require_fullscreen !== false;
+
   const {
     snapshot: proctorSnapshot,
     attachVideoElement,
@@ -120,6 +121,30 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
     sessionId: session?.id ?? null,
     context: 'active_exam',
     enabled: Boolean(session && !receipt && requireCameraForSession),
+    reportEvents: !isSubmitting && !receipt,
+  });
+
+  const {
+    snapshot: audioSnapshot,
+    retryAudio,
+    stopAudioMonitoring,
+  } = useAudioProctor({
+    examId,
+    sessionId: session?.id ?? null,
+    context: 'active_exam',
+    enabled: Boolean(session && !receipt && requireAudioForSession),
+    reportEvents: !isSubmitting && !receipt,
+  });
+
+  const {
+    snapshot: browserSnapshot,
+    recordSyncConnectionDrop,
+  } = useBrowserMonitor({
+    examId,
+    sessionId: session?.id ?? null,
+    enabled: Boolean(session && !receipt),
+    requireFullscreen: requireFullscreenForSession,
+    isOnline,
     reportEvents: !isSubmitting && !receipt,
   });
 
@@ -184,6 +209,7 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
         setPendingCount(0);
         setConfirmSubmitOpen(false);
         stopMonitoring();
+        stopAudioMonitoring();
         setReceipt(json as ExamSubmissionReceipt);
 
         if (typeof document !== 'undefined' && document.fullscreenElement) {
@@ -201,7 +227,7 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
         setIsSubmitting(false);
       }
     },
-    [clearTimers, examId, flaggedSet, isSubmitting, receipt, stopMonitoring]
+    [clearTimers, examId, flaggedSet, isSubmitting, receipt, stopAudioMonitoring, stopMonitoring]
   );
 
   const flushQueueRef = useRef<() => Promise<void>>(async () => {});
@@ -276,6 +302,7 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
       const onlineNow = typeof navigator !== 'undefined' ? navigator.onLine : true;
       setIsOnline(onlineNow);
       setSaveStatus(onlineNow ? 'error' : 'queued');
+      recordSyncConnectionDrop(!onlineNow ? 'browser_offline_during_sync' : 'answer_sync_failed');
 
       const delayMs = Math.min(15_000, 2500 * Math.pow(1.6, retryAttemptRef.current - 1));
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
@@ -285,7 +312,7 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
     } finally {
       isFlushingRef.current = false;
     }
-  }, [examId, executeSubmit, persistOutbox, receipt]);
+  }, [examId, executeSubmit, persistOutbox, receipt, recordSyncConnectionDrop]);
 
   useEffect(() => {
     flushQueueRef.current = flushQueue;
@@ -463,18 +490,10 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
     };
   }, [flushQueue]);
 
-  // Track real fullscreen & tab visibility while active
+  // Guard accidental tab close while exam session is active
   useEffect(() => {
     if (!session || receipt) return;
 
-    const handleFullscreen = () => {
-      setFullscreenActive(Boolean(document.fullscreenElement));
-    };
-    const handleVisibility = () => {
-      if (document.hidden) {
-        setVisibilitySwitches((prev) => prev + 1);
-      }
-    };
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (pendingQueueRef.current.size > 0 || !receipt) {
         e.preventDefault();
@@ -482,12 +501,8 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
       }
     };
 
-    document.addEventListener('fullscreenchange', handleFullscreen);
-    document.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreen);
-      document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [session, receipt]);
@@ -627,14 +642,19 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
           cameraReady:
             proctorSnapshot.cameraStatus === 'connected' ||
             (!requireCameraForSession && Boolean(session.hardwareStatus.camera)),
-          micReady: Boolean(session.hardwareStatus.microphone),
-          fullscreenActive,
-          requireCamera: paper.settings?.require_camera !== false,
-          requireAudio: paper.settings?.require_audio !== false,
-          requireFullscreen: paper.settings?.require_fullscreen !== false,
-          visibilitySwitches,
+          micReady:
+            audioSnapshot.audioStatus === 'connected' ||
+            (!requireAudioForSession && Boolean(session.hardwareStatus.microphone)),
+          fullscreenActive: browserSnapshot.fullscreenActive,
+          requireCamera: requireCameraForSession,
+          requireAudio: requireAudioForSession,
+          requireFullscreen: requireFullscreenForSession,
+          visibilitySwitches: browserSnapshot.tabHiddenCount,
           cameraStatus: proctorSnapshot.cameraStatus,
           faceStatus: proctorSnapshot.faceStatus,
+          audioStatus: audioSnapshot.audioStatus,
+          isPageFocused: browserSnapshot.isPageFocused,
+          isTabVisible: browserSnapshot.isTabVisible,
         }}
         onRetrySync={() => {
           void flushQueue();
@@ -693,9 +713,9 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
           )}
         </main>
 
-        {requireCameraForSession && (
-          <div className="w-full lg:w-64 lg:shrink-0 border-t lg:border-t-0 lg:border-l border-border bg-sidebar/50 p-3 sm:p-4">
-            <div className="lg:sticky lg:top-20">
+        <div className="w-full lg:w-64 lg:shrink-0 border-t lg:border-t-0 lg:border-l border-border bg-sidebar/50 p-3 sm:p-4">
+          <div className="lg:sticky lg:top-20 space-y-3">
+            {requireCameraForSession && (
               <CameraMonitorPanel
                 variant="compact"
                 snapshot={proctorSnapshot}
@@ -703,9 +723,21 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
                 onRetryCamera={retryCamera}
                 requireCamera={requireCameraForSession}
               />
-            </div>
+            )}
+            {requireAudioForSession && (
+              <AudioMonitorPanel
+                variant="compact"
+                snapshot={audioSnapshot}
+                onRetryAudio={retryAudio}
+                requireAudio={requireAudioForSession}
+              />
+            )}
+            <BrowserMonitorStatus
+              snapshot={browserSnapshot}
+              requireFullscreen={requireFullscreenForSession}
+            />
           </div>
-        )}
+        </div>
       </div>
 
       {/* BOTTOM: Submission Controls */}

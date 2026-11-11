@@ -21,6 +21,12 @@ const DEFAULT_EVENT_SEVERITY: Record<ProctorMonitoringEventType, EventSeverity> 
   MULTIPLE_FACES_DETECTED: 'high',
   CAMERA_DISCONNECTED: 'high',
   CAMERA_PERMISSION_DENIED: 'medium',
+  AUDIO_ACTIVITY: 'low',
+  MICROPHONE_DISCONNECTED: 'medium',
+  MICROPHONE_PERMISSION_DENIED: 'medium',
+  TAB_HIDDEN: 'medium',
+  FULLSCREEN_EXIT: 'medium',
+  SESSION_CONNECTION_INTERRUPTED: 'low',
 }
 
 const LEGACY_ENUM_FALLBACK: Record<ProctorMonitoringEventType, EventType> = {
@@ -28,6 +34,12 @@ const LEGACY_ENUM_FALLBACK: Record<ProctorMonitoringEventType, EventType> = {
   MULTIPLE_FACES_DETECTED: 'MULTIPLE_FACES_DETECTED',
   CAMERA_DISCONNECTED: 'FACE_OCCLUDED',
   CAMERA_PERMISSION_DENIED: 'FACE_OCCLUDED',
+  AUDIO_ACTIVITY: 'AUDIO_ANOMALY',
+  MICROPHONE_DISCONNECTED: 'AUDIO_ANOMALY',
+  MICROPHONE_PERMISSION_DENIED: 'AUDIO_ANOMALY',
+  TAB_HIDDEN: 'TAB_SWITCH',
+  FULLSCREEN_EXIT: 'FULLSCREEN_EXIT',
+  SESSION_CONNECTION_INTERRUPTED: 'WINDOW_BLUR',
 }
 
 export interface RecordProctorEventResult {
@@ -244,7 +256,10 @@ export class ProctorEventService {
 
     const duplicate = (recentEvents ?? []).find((row) => {
       const details = row.details as Record<string, unknown> | null
-      const logicalType = (details?.phase8EventType as string | undefined) || row.event_type
+      const logicalType =
+        (details?.phase9EventType as string | undefined) ||
+        (details?.phase8EventType as string | undefined) ||
+        row.event_type
       return logicalType === input.eventType
     })
 
@@ -260,11 +275,28 @@ export class ProctorEventService {
       }
     }
 
+    const isCameraEvent =
+      input.eventType === 'FACE_NOT_VISIBLE' ||
+      input.eventType === 'MULTIPLE_FACES_DETECTED' ||
+      input.eventType === 'CAMERA_DISCONNECTED' ||
+      input.eventType === 'CAMERA_PERMISSION_DENIED'
+
+    const isAudioEvent =
+      input.eventType === 'AUDIO_ACTIVITY' ||
+      input.eventType === 'MICROPHONE_DISCONNECTED' ||
+      input.eventType === 'MICROPHONE_PERMISSION_DENIED'
+
+    const telemetrySource = isCameraEvent
+      ? 'mediapipe_local'
+      : isAudioEvent
+        ? 'web_audio_local'
+        : 'browser_visibility_local'
+
     const enrichedDetails: Record<string, unknown> = {
-      phase8EventType: input.eventType,
+      ...(isCameraEvent ? { phase8EventType: input.eventType } : { phase9EventType: input.eventType }),
       context: input.context,
       advisoryOnly: true,
-      source: 'mediapipe_local',
+      source: telemetrySource,
       ...(input.sustainedDurationMs !== undefined
         ? { sustainedDurationMs: input.sustainedDurationMs }
         : {}),
@@ -311,21 +343,33 @@ export class ProctorEventService {
       )
     }
 
-    // Update non-punitive hardware health metadata for live invigilator visibility
-    const cameraOperational =
-      input.eventType !== 'CAMERA_DISCONNECTED' &&
-      input.eventType !== 'CAMERA_PERMISSION_DENIED'
+    // Update non-punitive hardware/browser health metadata for live invigilator visibility
+    const hardwarePatch: Record<string, unknown> = {
+      ...(sessionRow.hardware_status ?? {}),
+      lastProctorSignalType: input.eventType,
+      lastProctorSignalAt: new Date().toISOString(),
+    }
+
+    if (isCameraEvent) {
+      const cameraOperational =
+        input.eventType !== 'CAMERA_DISCONNECTED' &&
+        input.eventType !== 'CAMERA_PERMISSION_DENIED'
+      hardwarePatch.camera = cameraOperational
+      hardwarePatch.webcamReady = cameraOperational
+    } else if (isAudioEvent) {
+      const micOperational =
+        input.eventType !== 'MICROPHONE_DISCONNECTED' &&
+        input.eventType !== 'MICROPHONE_PERMISSION_DENIED'
+      hardwarePatch.microphone = micOperational
+      hardwarePatch.microphoneReady = micOperational
+    } else if (input.eventType === 'FULLSCREEN_EXIT') {
+      hardwarePatch.fullscreen = false
+    }
 
     await supabaseAdmin
       .from('exam_sessions')
       .update({
-        hardware_status: {
-          ...(sessionRow.hardware_status ?? {}),
-          camera: cameraOperational,
-          webcamReady: cameraOperational,
-          lastCameraSignalType: input.eventType,
-          lastCameraSignalAt: new Date().toISOString(),
-        },
+        hardware_status: hardwarePatch,
         updated_at: new Date().toISOString(),
       })
       .eq('id', sessionRow.id)

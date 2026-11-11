@@ -5,6 +5,77 @@ export type ProctorMonitoringEventType =
   | 'MULTIPLE_FACES_DETECTED'
   | 'CAMERA_DISCONNECTED'
   | 'CAMERA_PERMISSION_DENIED'
+  | 'AUDIO_ACTIVITY'
+  | 'MICROPHONE_DISCONNECTED'
+  | 'MICROPHONE_PERMISSION_DENIED'
+  | 'TAB_HIDDEN'
+  | 'FULLSCREEN_EXIT'
+  | 'SESSION_CONNECTION_INTERRUPTED'
+
+export type AudioConnectionStatus =
+  | 'idle'
+  | 'requesting_permission'
+  | 'connected'
+  | 'permission_denied'
+  | 'disconnected'
+  | 'device_unavailable'
+  | 'unsupported'
+
+export type AudioVadStatus = 'energy_only' | 'loading' | 'active' | 'unavailable'
+
+export interface AudioConstraintSupport {
+  noiseSuppressionSupported: boolean
+  echoCancellationSupported: boolean
+  autoGainControlSupported: boolean
+  noiseSuppressionActive: boolean
+  echoCancellationActive: boolean
+  autoGainControlActive: boolean
+}
+
+export interface ShortWindowAudioMetrics {
+  /** Instantaneous root-mean-square acoustic energy (0..1) */
+  rms: number
+  /** Decibels relative to full scale [-90..0] */
+  dbfs: number
+  /** Visual meter normalized level (0..1) */
+  level: number
+  /** 8 logarithmic/linear frequency energy bins for activity meter (0..1 each) */
+  bands: number[]
+  /** Fraction of energy in 300Hz-3400Hz range (sound energy proxy, not speech identity) */
+  speechBandEnergyRatio: number
+  /** Optional VAD probability [0..1] when an optional ML VAD adapter is active; null otherwise */
+  vadSpeechProbability: number | null
+  /** Distinguishes RMS sound energy from a loaded speech/non-speech VAD model */
+  measurementBasis: 'acoustic_energy' | 'vad_model'
+  sampledAtMs: number
+}
+
+export interface AudioMonitorSnapshot {
+  audioStatus: AudioConnectionStatus
+  vadStatus: AudioVadStatus
+  micLabel: string | null
+  errorMessage: string | null
+  constraints: AudioConstraintSupport
+  metrics: ShortWindowAudioMetrics | null
+  activityProgressRatio: number
+  sampleRateHz: number | null
+  isElevatedEnergy: boolean
+  telemetryLog: ProctorTelemetryEntry[]
+}
+
+export interface BrowserMonitorSnapshot {
+  isTabVisible: boolean
+  isPageFocused: boolean
+  fullscreenActive: boolean
+  fullscreenSupported: boolean
+  visibilitySupported: boolean
+  isOnline: boolean
+  tabHiddenCount: number
+  focusLossCount: number
+  fullscreenExitCount: number
+  connectionInterruptionCount: number
+  pendingQueuedInterruptions: number
+}
 
 export type CameraConnectionStatus =
   | 'idle'

@@ -18,7 +18,11 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { CameraConnectionStatus, FacePresenceStatus } from '@/types/proctoring';
+import type {
+  AudioConnectionStatus,
+  CameraConnectionStatus,
+  FacePresenceStatus,
+} from '@/types/proctoring';
 
 export type SaveSyncStatus = 'saved' | 'saving' | 'queued' | 'error';
 
@@ -40,6 +44,9 @@ export interface ExamTopBarProps {
     visibilitySwitches: number;
     cameraStatus?: CameraConnectionStatus;
     faceStatus?: FacePresenceStatus;
+    audioStatus?: AudioConnectionStatus;
+    isPageFocused?: boolean;
+    isTabVisible?: boolean;
   };
   onRetrySync: () => void;
   onEnterFullscreen: () => void;
@@ -158,12 +165,48 @@ export function ExamTopBar({
               <span
                 className={cn(
                   'inline-flex items-center gap-1 font-mono text-[11px]',
-                  monitoring.micReady ? 'text-success' : 'text-warning'
+                  monitoring.audioStatus === 'disconnected' ||
+                    monitoring.audioStatus === 'permission_denied' ||
+                    monitoring.audioStatus === 'device_unavailable'
+                    ? 'text-critical'
+                    : monitoring.micReady
+                      ? 'text-success'
+                      : 'text-warning'
                 )}
-                title={monitoring.micReady ? 'Microphone verified' : 'Microphone unavailable'}
+                title={
+                  monitoring.audioStatus === 'disconnected'
+                    ? 'Microphone disconnected during session'
+                    : monitoring.audioStatus === 'permission_denied'
+                      ? 'Microphone permission denied'
+                      : monitoring.micReady
+                        ? 'Microphone live (local energy analysis only)'
+                        : 'Microphone unavailable'
+                }
               >
                 <Mic className="h-3 w-3" />
-                {monitoring.micReady ? 'Mic' : 'No Mic'}
+                {monitoring.audioStatus === 'disconnected'
+                  ? 'Mic Lost'
+                  : monitoring.audioStatus === 'permission_denied'
+                    ? 'Mic Denied'
+                    : monitoring.micReady
+                      ? 'Mic Live'
+                      : 'No Mic'}
+              </span>
+            )}
+            {monitoring.isTabVisible === false && (
+              <span
+                className="inline-flex items-center gap-1 font-mono text-[11px] text-warning"
+                title="Examination tab is hidden"
+              >
+                Tab Hidden
+              </span>
+            )}
+            {monitoring.isTabVisible !== false && monitoring.isPageFocused === false && (
+              <span
+                className="inline-flex items-center gap-1 font-mono text-[11px] text-warning"
+                title="Examination window is not currently focused"
+              >
+                Focus Lost
               </span>
             )}
             {monitoring.requireFullscreen && !monitoring.fullscreenActive && (

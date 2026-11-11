@@ -5,9 +5,15 @@ export const PROCTOR_MONITORING_EVENT_TYPES = [
   'MULTIPLE_FACES_DETECTED',
   'CAMERA_DISCONNECTED',
   'CAMERA_PERMISSION_DENIED',
+  'AUDIO_ACTIVITY',
+  'MICROPHONE_DISCONNECTED',
+  'MICROPHONE_PERMISSION_DENIED',
+  'TAB_HIDDEN',
+  'FULLSCREEN_EXIT',
+  'SESSION_CONNECTION_INTERRUPTED',
 ] as const
 
-const FORBIDDEN_FRAME_KEYS = new Set([
+const FORBIDDEN_MEDIA_KEYS = new Set([
   'frame',
   'frames',
   'image',
@@ -18,6 +24,16 @@ const FORBIDDEN_FRAME_KEYS = new Set([
   'videodata',
   'screenshot',
   'pixeldata',
+  'audio',
+  'audiodata',
+  'pcm',
+  'wav',
+  'webm',
+  'ogg',
+  'mp3',
+  'recording',
+  'voiceprint',
+  'speakerid',
 ])
 
 export const proctorEventPayloadSchema = z
@@ -48,11 +64,18 @@ export function assertNoRawFramePayload(rawBody: unknown): void {
     }
 
     for (const [key, value] of Object.entries(current as Record<string, unknown>)) {
-      if (FORBIDDEN_FRAME_KEYS.has(key.toLowerCase())) {
-        throw new Error(`Raw media/frame key "${key}" is not allowed; proctoring runs locally.`)
+      if (FORBIDDEN_MEDIA_KEYS.has(key.toLowerCase())) {
+        throw new Error(
+          `Raw media/audio payload key "${key}" is not allowed; proctoring runs locally.`
+        )
       }
-      if (typeof value === 'string' && value.startsWith('data:image/')) {
-        throw new Error('Inline base64 image payloads are prohibited; proctoring runs locally.')
+      if (
+        typeof value === 'string' &&
+        (value.startsWith('data:image/') || value.startsWith('data:audio/'))
+      ) {
+        throw new Error(
+          'Inline base64 image/audio payloads are prohibited; proctoring runs locally.'
+        )
       }
       if (value && typeof value === 'object') {
         queue.push(value)

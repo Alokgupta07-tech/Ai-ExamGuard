@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -22,7 +22,9 @@ import { StatusBadge } from '@/components/shared/status-badge';
 import { ErrorState } from '@/components/shared/error-state';
 import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
 import { SubmissionConfirmation } from '@/components/exam/submission-confirmation';
+import { AudioMonitorPanel } from '@/components/proctoring/audio-monitor-panel';
 import { CameraMonitorPanel } from '@/components/proctoring/camera-monitor-panel';
+import { useAudioProctor } from '@/hooks/use-audio-proctor';
 import { useCameraProctor } from '@/hooks/use-camera-proctor';
 import type { ExamPreflightPayload } from '@/types/exam-session';
 
@@ -48,32 +50,23 @@ function formatWaitCountdown(ms: number): string {
 
 export function ExamPreflightView({ examId }: { examId: string }) {
   const router = useRouter();
-  const micStreamRef = useRef<MediaStream | null>(null);
 
   const [payload, setPayload] = useState<ExamPreflightPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [cameraPreviewEnabled, setCameraPreviewEnabled] = useState(true);
-  const [micOk, setMicOk] = useState<boolean | null>(null);
+  const [audioPreviewEnabled, setAudioPreviewEnabled] = useState(true);
   const [fullscreenOk] = useState<boolean>(() =>
     typeof document !== 'undefined' ? Boolean(document.fullscreenEnabled) : true
   );
-  const [testingMic, setTestingMic] = useState(false);
   const [deviceMessage, setDeviceMessage] = useState<string | null>(null);
   const [agreedHonor, setAgreedHonor] = useState(false);
   const [entering, setEntering] = useState(false);
   const [waitRemainingMs, setWaitRemainingMs] = useState<number>(0);
 
-  const stopStream = useCallback(() => {
-    if (micStreamRef.current) {
-      micStreamRef.current.getTracks().forEach((t) => t.stop());
-      micStreamRef.current = null;
-    }
-    setTestingMic(false);
-  }, []);
-
   const reqCameraSetting = payload?.exam.settings?.require_camera !== false;
+  const reqAudioSetting = payload?.exam.settings?.require_audio !== false;
   const {
     snapshot: proctorSnapshot,
     attachVideoElement,
@@ -85,6 +78,22 @@ export function ExamPreflightView({ examId }: { examId: string }) {
     enabled: Boolean(payload?.eligible && reqCameraSetting && cameraPreviewEnabled && !entering),
     reportEvents: true,
   });
+
+  const {
+    snapshot: audioSnapshot,
+    retryAudio,
+    stopAudioMonitoring,
+  } = useAudioProctor({
+    examId,
+    context: 'preflight',
+    enabled: Boolean(payload?.eligible && reqAudioSetting && audioPreviewEnabled && !entering),
+    reportEvents: true,
+  });
+
+  const stopStream = useCallback(() => {
+    stopAudioMonitoring();
+    setAudioPreviewEnabled(false);
+  }, [stopAudioMonitoring]);
 
   const fetchPreflight = useCallback(async () => {
     setLoading(true);
@@ -154,39 +163,16 @@ export function ExamPreflightView({ examId }: { examId: string }) {
   }, [payload]);
 
   const runDeviceCheck = async () => {
-    stopStream();
     setDeviceMessage(null);
     setCameraPreviewEnabled(true);
+    setAudioPreviewEnabled(true);
     retryCamera();
-
-    const reqMic = payload?.exam.settings?.require_audio !== false;
-    if (!reqMic) {
-      setMicOk(true);
-      return;
+    if (reqAudioSetting) {
+      retryAudio();
     }
-
-    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-      setMicOk(false);
-      setDeviceMessage('Browser MediaDevices API is not supported in this environment.');
-      return;
-    }
-
-    setTestingMic(true);
-    try {
-      const micStream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: false,
-      });
-      micStreamRef.current = micStream;
-      setMicOk(micStream.getAudioTracks().length > 0);
-      setDeviceMessage('Camera, MediaPipe face verification, and microphone checks are active.');
-    } catch {
-      setMicOk(false);
-      setDeviceMessage(
-        'Microphone permission was denied. Camera & AI monitoring status is shown below.'
-      );
-      setTestingMic(false);
-    }
+    setDeviceMessage(
+      'Camera, MediaPipe landmarking, and Web Audio acoustic monitoring checks refreshed.'
+    );
   };
 
   const handleEnterExam = async () => {
@@ -196,7 +182,7 @@ export function ExamPreflightView({ examId }: { examId: string }) {
     try {
       const hardwareSnapshot = {
         camera: proctorSnapshot.cameraStatus === 'connected',
-        microphone: Boolean(micOk),
+        microphone: audioSnapshot.audioStatus === 'connected',
         fullscreen: fullscreenOk,
       };
       if (typeof window !== 'undefined') {
@@ -204,7 +190,7 @@ export function ExamPreflightView({ examId }: { examId: string }) {
       }
 
       stopMonitoring();
-      stopStream();
+      stopAudioMonitoring();
 
       if (payload.exam.settings?.require_fullscreen && document.documentElement.requestFullscreen) {
         try {
@@ -265,6 +251,18 @@ export function ExamPreflightView({ examId }: { examId: string }) {
     proctorSnapshot.cameraStatus === 'connected'
       ? true
       : cameraErrorState
+        ? false
+        : null;
+  const audioErrorState =
+    audioSnapshot.audioStatus === 'permission_denied' ||
+    audioSnapshot.audioStatus === 'disconnected' ||
+    audioSnapshot.audioStatus === 'device_unavailable' ||
+    audioSnapshot.audioStatus === 'unsupported';
+  const micOk: boolean | null = !reqAudio
+    ? true
+    : audioSnapshot.audioStatus === 'connected'
+      ? true
+      : audioErrorState
         ? false
         : null;
   const hardwareBlocked =
@@ -433,16 +431,15 @@ export function ExamPreflightView({ examId }: { examId: string }) {
                   Pause Camera
                 </Button>
               )}
-              {testingMic ? (
-                <Button type="button" variant="outline" size="sm" onClick={stopStream}>
-                  Stop Mic Check
-                </Button>
-              ) : (
-                <Button type="button" variant="outline" size="sm" onClick={runDeviceCheck}>
-                  <RefreshCw className="h-3.5 w-3.5" />
-                  Run Device &amp; AI Check
+              {audioPreviewEnabled && reqAudio && (
+                <Button type="button" variant="ghost" size="sm" onClick={stopStream}>
+                  Pause Mic
                 </Button>
               )}
+              <Button type="button" variant="outline" size="sm" onClick={runDeviceCheck}>
+                <RefreshCw className="h-3.5 w-3.5" />
+                Run Device &amp; AI Check
+              </Button>
             </div>
           </div>
 
@@ -471,7 +468,7 @@ export function ExamPreflightView({ examId }: { examId: string }) {
               ) : micOk === false ? (
                 <XCircle className="h-4 w-4 text-critical" />
               ) : (
-                <span className="text-[11px] text-muted-foreground">Pending</span>
+                <span className="text-[11px] text-muted-foreground">Checking</span>
               )}
             </div>
 
@@ -500,6 +497,24 @@ export function ExamPreflightView({ examId }: { examId: string }) {
               requireCamera={reqCamera}
             />
           )}
+
+          {reqAudio && (
+            <AudioMonitorPanel
+              variant="preflight"
+              snapshot={audioSnapshot}
+              onRetryAudio={() => {
+                setAudioPreviewEnabled(true);
+                retryAudio();
+              }}
+              requireAudio={reqAudio}
+            />
+          )}
+
+          <p className="text-[11px] text-muted-foreground">
+            Browser monitoring observes tab visibility, focus, fullscreen state, and network
+            connectivity inside this exam tab where supported — it does not inspect operating
+            system applications or external devices.
+          </p>
 
           {deviceMessage && <p className="text-xs text-muted-foreground">{deviceMessage}</p>}
         </section>

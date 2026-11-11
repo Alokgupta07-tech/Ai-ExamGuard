@@ -422,9 +422,13 @@ async function fetchTenantAcademicData(tenantId: string, courseFilterIds?: strin
       examTitle: exam?.title || 'Examination',
       studentName: student?.fullName || 'Candidate',
       eventType:
+        (typeof ev.details?.phase9EventType === 'string'
+          ? (ev.details.phase9EventType as EventType)
+          : undefined) ||
         (typeof ev.details?.phase8EventType === 'string'
           ? (ev.details.phase8EventType as EventType)
-          : undefined) || ev.event_type,
+          : undefined) ||
+        ev.event_type,
       severity: ev.severity,
       confidence: ev.confidence !== null ? Number(ev.confidence) : null,
       details: ev.details || {},
