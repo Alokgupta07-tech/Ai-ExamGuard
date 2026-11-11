@@ -941,6 +941,21 @@ export class DashboardService {
 
   static async updateExamStatus(examId: string, status: ExamStatus) {
     const actor = await requireRoleActor(['admin', 'instructor']);
+    const { data: existing, error: fetchError } = await supabaseAdmin
+      .from('exams')
+      .select('id, tenant_id, created_by')
+      .eq('id', examId)
+      .eq('tenant_id', actor.tenantId)
+      .maybeSingle();
+
+    if (fetchError || !existing) {
+      throw new Error('Examination not found in your university tenant.');
+    }
+
+    if (!actor.roles.includes('admin') && existing.created_by !== actor.userId) {
+      throw new Error('Forbidden: only the exam owner or university administrator may change exam status.');
+    }
+
     const { error } = await supabaseAdmin
       .from('exams')
       .update({ status, updated_at: new Date().toISOString() })
@@ -1026,9 +1041,13 @@ export class DashboardService {
       throw new Error('Review case not found in your institutional tenant.');
     }
 
+    if (input.sessionId !== reviewCase.session_id) {
+      throw new Error('Forbidden: Session does not match the selected review case.');
+    }
+
     const { error: actionError } = await supabaseAdmin.from('review_actions').insert({
       review_case_id: input.reviewCaseId,
-      session_id: input.sessionId,
+      session_id: reviewCase.session_id,
       reviewer_id: actor.userId,
       action_type: input.actionType,
       message: input.message.trim(),
@@ -1045,7 +1064,8 @@ export class DashboardService {
         assigned_to: actor.userId,
         reviewed_at: new Date().toISOString(),
       })
-      .eq('id', input.reviewCaseId);
+      .eq('id', input.reviewCaseId)
+      .eq('tenant_id', actor.tenantId);
 
     if (caseError) {
       throw new Error(`Failed to update review case: ${caseError.message}`);

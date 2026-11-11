@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { buildCsvDocument, escapeCsvCell } from '@/lib/utils/csv';
 import {
   evaluateSessionRiskAndCorrelations,
   mapRowToCanonicalEvent,
@@ -674,22 +675,7 @@ export function computeReportSuite(input: ComputeReportInput): ReportSuitePayloa
   };
 }
 
-function escapeCsvCell(value: string | number | boolean | null | undefined): string {
-  const raw = value === null || value === undefined ? '' : String(value);
-  // Protect spreadsheet exports against formula injection when opening CSV in Excel
-  const safe = /^[=+@\t\r]/.test(raw) ? `'${raw}` : raw;
-  return `"${safe.replace(/"/g, '""')}"`;
-}
-
-export function buildCsvDocument(
-  headers: string[],
-  rows: Array<Array<string | number | boolean | null | undefined>>
-): string {
-  return [
-    headers.map(escapeCsvCell).join(','),
-    ...rows.map((row) => row.map(escapeCsvCell).join(',')),
-  ].join('\n');
-}
+export { escapeCsvCell, buildCsvDocument };
 
 export function serializeReportToCsv(
   reportType: ReportType,

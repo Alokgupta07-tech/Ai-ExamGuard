@@ -61,9 +61,7 @@ export async function middleware(request: NextRequest) {
     const dbRoles = (memberships || []).map((m: { role: string }) => m.role);
     if (dbRoles.length > 0) return dbRoles;
 
-    const metaRole = user.user_metadata?.role;
-    if (metaRole === 'faculty') return ['instructor'];
-    if (typeof metaRole === 'string' && metaRole.length > 0) return [metaRole];
+    // Security: never trust client-mutable user_metadata.role for privileged portals
     return ['student'];
   };
 
