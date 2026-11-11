@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import type { CameraConnectionStatus, FacePresenceStatus } from '@/types/proctoring';
 
 export type SaveSyncStatus = 'saved' | 'saving' | 'queued' | 'error';
 
@@ -37,6 +38,8 @@ export interface ExamTopBarProps {
     requireAudio: boolean;
     requireFullscreen: boolean;
     visibilitySwitches: number;
+    cameraStatus?: CameraConnectionStatus;
+    faceStatus?: FacePresenceStatus;
   };
   onRetrySync: () => void;
   onEnterFullscreen: () => void;
@@ -117,12 +120,38 @@ export function ExamTopBar({
               <span
                 className={cn(
                   'inline-flex items-center gap-1 font-mono text-[11px]',
-                  monitoring.cameraReady ? 'text-success' : 'text-warning'
+                  monitoring.faceStatus === 'multiple_faces_detected' ||
+                    monitoring.cameraStatus === 'disconnected' ||
+                    monitoring.cameraStatus === 'permission_denied'
+                    ? 'text-critical'
+                    : monitoring.faceStatus === 'face_not_visible'
+                      ? 'text-warning'
+                      : monitoring.cameraReady
+                        ? 'text-success'
+                        : 'text-warning'
                 )}
-                title={monitoring.cameraReady ? 'Camera verified' : 'Camera unavailable'}
+                title={
+                  monitoring.faceStatus === 'multiple_faces_detected'
+                    ? 'Multiple faces detected'
+                    : monitoring.faceStatus === 'face_not_visible'
+                      ? 'Face not visible'
+                      : monitoring.cameraReady
+                        ? 'Camera & face monitoring active'
+                        : 'Camera unavailable'
+                }
               >
                 <Camera className="h-3 w-3" />
-                {monitoring.cameraReady ? 'Cam' : 'No Cam'}
+                {monitoring.faceStatus === 'multiple_faces_detected'
+                  ? '2+ Faces'
+                  : monitoring.faceStatus === 'face_not_visible'
+                    ? 'No Face'
+                    : monitoring.cameraStatus === 'disconnected'
+                      ? 'Cam Lost'
+                      : monitoring.cameraStatus === 'permission_denied'
+                        ? 'Cam Denied'
+                        : monitoring.cameraReady
+                          ? 'Cam Live'
+                          : 'No Cam'}
               </span>
             )}
             {monitoring.requireAudio && (

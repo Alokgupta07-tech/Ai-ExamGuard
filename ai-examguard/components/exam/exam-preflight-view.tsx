@@ -22,6 +22,8 @@ import { StatusBadge } from '@/components/shared/status-badge';
 import { ErrorState } from '@/components/shared/error-state';
 import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
 import { SubmissionConfirmation } from '@/components/exam/submission-confirmation';
+import { CameraMonitorPanel } from '@/components/proctoring/camera-monitor-panel';
+import { useCameraProctor } from '@/hooks/use-camera-proctor';
 import type { ExamPreflightPayload } from '@/types/exam-session';
 
 function formatWindowTime(iso: string): string {
@@ -46,31 +48,43 @@ function formatWaitCountdown(ms: number): string {
 
 export function ExamPreflightView({ examId }: { examId: string }) {
   const router = useRouter();
-  const streamRef = useRef<MediaStream | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const micStreamRef = useRef<MediaStream | null>(null);
 
   const [payload, setPayload] = useState<ExamPreflightPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const [cameraOk, setCameraOk] = useState<boolean | null>(null);
+  const [cameraPreviewEnabled, setCameraPreviewEnabled] = useState(true);
   const [micOk, setMicOk] = useState<boolean | null>(null);
   const [fullscreenOk] = useState<boolean>(() =>
     typeof document !== 'undefined' ? Boolean(document.fullscreenEnabled) : true
   );
-  const [testingDevices, setTestingDevices] = useState(false);
+  const [testingMic, setTestingMic] = useState(false);
   const [deviceMessage, setDeviceMessage] = useState<string | null>(null);
   const [agreedHonor, setAgreedHonor] = useState(false);
   const [entering, setEntering] = useState(false);
   const [waitRemainingMs, setWaitRemainingMs] = useState<number>(0);
 
   const stopStream = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
+    if (micStreamRef.current) {
+      micStreamRef.current.getTracks().forEach((t) => t.stop());
+      micStreamRef.current = null;
     }
-    setTestingDevices(false);
+    setTestingMic(false);
   }, []);
+
+  const reqCameraSetting = payload?.exam.settings?.require_camera !== false;
+  const {
+    snapshot: proctorSnapshot,
+    attachVideoElement,
+    retryCamera,
+    stopMonitoring,
+  } = useCameraProctor({
+    examId,
+    context: 'preflight',
+    enabled: Boolean(payload?.eligible && reqCameraSetting && cameraPreviewEnabled && !entering),
+    reportEvents: true,
+  });
 
   const fetchPreflight = useCallback(async () => {
     setLoading(true);
@@ -142,36 +156,36 @@ export function ExamPreflightView({ examId }: { examId: string }) {
   const runDeviceCheck = async () => {
     stopStream();
     setDeviceMessage(null);
+    setCameraPreviewEnabled(true);
+    retryCamera();
+
+    const reqMic = payload?.exam.settings?.require_audio !== false;
+    if (!reqMic) {
+      setMicOk(true);
+      return;
+    }
+
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-      setCameraOk(false);
       setMicOk(false);
       setDeviceMessage('Browser MediaDevices API is not supported in this environment.');
       return;
     }
 
-    const reqCam = payload?.exam.settings?.require_camera !== false;
-    const reqMic = payload?.exam.settings?.require_audio !== false;
-
-    setTestingDevices(true);
+    setTestingMic(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: reqCam || true,
-        audio: reqMic || true,
+      const micStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: false,
       });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      setCameraOk(stream.getVideoTracks().length > 0);
-      setMicOk(stream.getAudioTracks().length > 0);
-      setDeviceMessage('Camera and microphone streams verified locally in your browser.');
+      micStreamRef.current = micStream;
+      setMicOk(micStream.getAudioTracks().length > 0);
+      setDeviceMessage('Camera, MediaPipe face verification, and microphone checks are active.');
     } catch {
-      setCameraOk(false);
       setMicOk(false);
       setDeviceMessage(
-        'Camera or microphone permission was denied. Grant access in your browser site settings or continue if optional.'
+        'Microphone permission was denied. Camera & AI monitoring status is shown below.'
       );
-      setTestingDevices(false);
+      setTestingMic(false);
     }
   };
 
@@ -181,7 +195,7 @@ export function ExamPreflightView({ examId }: { examId: string }) {
 
     try {
       const hardwareSnapshot = {
-        camera: Boolean(cameraOk),
+        camera: proctorSnapshot.cameraStatus === 'connected',
         microphone: Boolean(micOk),
         fullscreen: fullscreenOk,
       };
@@ -189,6 +203,7 @@ export function ExamPreflightView({ examId }: { examId: string }) {
         sessionStorage.setItem(`examguard_hw_${examId}`, JSON.stringify(hardwareSnapshot));
       }
 
+      stopMonitoring();
       stopStream();
 
       if (payload.exam.settings?.require_fullscreen && document.documentElement.requestFullscreen) {
@@ -241,6 +256,17 @@ export function ExamPreflightView({ examId }: { examId: string }) {
   const reqAudio = payload.exam.settings?.require_audio !== false;
   const reqFullscreen = payload.exam.settings?.require_fullscreen !== false;
   const isResuming = payload.existingSession?.status === 'in_progress';
+  const cameraErrorState =
+    proctorSnapshot.cameraStatus === 'permission_denied' ||
+    proctorSnapshot.cameraStatus === 'disconnected' ||
+    proctorSnapshot.cameraStatus === 'device_unavailable' ||
+    proctorSnapshot.cameraStatus === 'unsupported';
+  const cameraOk: boolean | null =
+    proctorSnapshot.cameraStatus === 'connected'
+      ? true
+      : cameraErrorState
+        ? false
+        : null;
   const hardwareBlocked =
     (reqCamera && cameraOk === false) || (reqAudio && micOk === false);
   const canLaunch = payload.eligible && agreedHonor && !entering && !hardwareBlocked;
@@ -393,16 +419,31 @@ export function ExamPreflightView({ examId }: { examId: string }) {
               </p>
             </div>
 
-            {testingDevices ? (
-              <Button variant="outline" size="sm" onClick={stopStream}>
-                Stop Preview
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" onClick={runDeviceCheck}>
-                <RefreshCw className="h-3.5 w-3.5" />
-                Run Device Check
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {cameraPreviewEnabled && reqCamera && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    stopMonitoring();
+                    setCameraPreviewEnabled(false);
+                  }}
+                >
+                  Pause Camera
+                </Button>
+              )}
+              {testingMic ? (
+                <Button type="button" variant="outline" size="sm" onClick={stopStream}>
+                  Stop Mic Check
+                </Button>
+              ) : (
+                <Button type="button" variant="outline" size="sm" onClick={runDeviceCheck}>
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Run Device &amp; AI Check
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -416,7 +457,7 @@ export function ExamPreflightView({ examId }: { examId: string }) {
               ) : cameraOk === false ? (
                 <XCircle className="h-4 w-4 text-critical" />
               ) : (
-                <span className="text-[11px] text-muted-foreground">Pending</span>
+                <span className="text-[11px] text-muted-foreground">Checking</span>
               )}
             </div>
 
@@ -447,16 +488,17 @@ export function ExamPreflightView({ examId }: { examId: string }) {
             </div>
           </div>
 
-          {testingDevices && (
-            <div className="overflow-hidden rounded-md border border-border bg-background max-w-xs">
-              <video
-                ref={videoRef}
-                autoPlay
-                muted
-                playsInline
-                className="w-full h-36 object-cover -scale-x-100"
-              />
-            </div>
+          {reqCamera && (
+            <CameraMonitorPanel
+              variant="preflight"
+              snapshot={proctorSnapshot}
+              attachVideoElement={attachVideoElement}
+              onRetryCamera={() => {
+                setCameraPreviewEnabled(true);
+                retryCamera();
+              }}
+              requireCamera={reqCamera}
+            />
           )}
 
           {deviceMessage && <p className="text-xs text-muted-foreground">{deviceMessage}</p>}

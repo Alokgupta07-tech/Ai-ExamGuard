@@ -21,8 +21,11 @@ export type QuestionDifficulty = 'easy' | 'medium' | 'hard';
 
 export type EventType =
   | 'NO_FACE_DETECTED'
+  | 'FACE_NOT_VISIBLE'
   | 'MULTIPLE_FACES_DETECTED'
   | 'FACE_OCCLUDED'
+  | 'CAMERA_DISCONNECTED'
+  | 'CAMERA_PERMISSION_DENIED'
   | 'TAB_SWITCH'
   | 'FULLSCREEN_EXIT'
   | 'WINDOW_BLUR'

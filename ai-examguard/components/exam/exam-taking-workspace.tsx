@@ -12,6 +12,8 @@ import { QuestionNavigator } from '@/components/exam/question-navigator';
 import { QuestionStage } from '@/components/exam/question-stage';
 import { ExamBottomBar } from '@/components/exam/exam-bottom-bar';
 import { SubmissionConfirmation } from '@/components/exam/submission-confirmation';
+import { CameraMonitorPanel } from '@/components/proctoring/camera-monitor-panel';
+import { useCameraProctor } from '@/hooks/use-camera-proctor';
 import type { StudentExamPaper } from '@/types/exam-engine';
 import type {
   ActiveExamSessionState,
@@ -107,6 +109,20 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
   const autoSubmittedRef = useRef(false);
   const sessionIdRef = useRef<string | null>(null);
 
+  const requireCameraForSession = paper?.settings?.require_camera !== false;
+  const {
+    snapshot: proctorSnapshot,
+    attachVideoElement,
+    retryCamera,
+    stopMonitoring,
+  } = useCameraProctor({
+    examId,
+    sessionId: session?.id ?? null,
+    context: 'active_exam',
+    enabled: Boolean(session && !receipt && requireCameraForSession),
+    reportEvents: !isSubmitting && !receipt,
+  });
+
   const clearTimers = useCallback(() => {
     if (flushTimerRef.current) {
       clearTimeout(flushTimerRef.current);
@@ -167,6 +183,7 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
         }
         setPendingCount(0);
         setConfirmSubmitOpen(false);
+        stopMonitoring();
         setReceipt(json as ExamSubmissionReceipt);
 
         if (typeof document !== 'undefined' && document.fullscreenElement) {
@@ -184,7 +201,7 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
         setIsSubmitting(false);
       }
     },
-    [clearTimers, examId, flaggedSet, isSubmitting, receipt]
+    [clearTimers, examId, flaggedSet, isSubmitting, receipt, stopMonitoring]
   );
 
   const flushQueueRef = useRef<() => Promise<void>>(async () => {});
@@ -607,13 +624,17 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
         lastSavedAt={lastSavedAt}
         isOnline={isOnline}
         monitoring={{
-          cameraReady: Boolean(session.hardwareStatus.camera),
+          cameraReady:
+            proctorSnapshot.cameraStatus === 'connected' ||
+            (!requireCameraForSession && Boolean(session.hardwareStatus.camera)),
           micReady: Boolean(session.hardwareStatus.microphone),
           fullscreenActive,
           requireCamera: paper.settings?.require_camera !== false,
           requireAudio: paper.settings?.require_audio !== false,
           requireFullscreen: paper.settings?.require_fullscreen !== false,
           visibilitySwitches,
+          cameraStatus: proctorSnapshot.cameraStatus,
+          faceStatus: proctorSnapshot.faceStatus,
         }}
         onRetrySync={() => {
           void flushQueue();
@@ -636,8 +657,8 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
         </div>
       )}
 
-      {/* MAIN BODY: LEFT Question Navigator + CENTRE Question Stage */}
-      <div className="flex-1 flex mx-auto w-full max-w-[1440px]">
+      {/* MAIN BODY: LEFT Question Navigator + CENTRE Question Stage + COMPACT Monitor */}
+      <div className="flex-1 flex flex-col lg:flex-row mx-auto w-full max-w-[1440px]">
         <QuestionNavigator
           questions={paper.questions}
           currentIndex={currentIndex}
@@ -671,6 +692,20 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
             />
           )}
         </main>
+
+        {requireCameraForSession && (
+          <div className="w-full lg:w-64 lg:shrink-0 border-t lg:border-t-0 lg:border-l border-border bg-sidebar/50 p-3 sm:p-4">
+            <div className="lg:sticky lg:top-20">
+              <CameraMonitorPanel
+                variant="compact"
+                snapshot={proctorSnapshot}
+                attachVideoElement={attachVideoElement}
+                onRetryCamera={retryCamera}
+                requireCamera={requireCameraForSession}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* BOTTOM: Submission Controls */}
