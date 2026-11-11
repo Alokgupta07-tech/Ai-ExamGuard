@@ -40,16 +40,21 @@ export function InviteMemberModal({
     e.preventDefault();
     setSaving(true);
     setError(null);
-    const res = await inviteUserAction({ tenantId, email, fullName, role });
-    setSaving(false);
-    if (!res.success) {
-      setError(res.error || 'Failed to invite user.');
-      return;
+    try {
+      const res = await inviteUserAction({ tenantId, email, fullName, role });
+      if (!res.success) {
+        setError(res.error || 'Failed to invite user.');
+        return;
+      }
+      setEmail('');
+      setFullName('');
+      onClose();
+      await onSuccess(`Invited ${email} (${role}) to institution.`);
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to invite user.');
+    } finally {
+      setSaving(false);
     }
-    setEmail('');
-    setFullName('');
-    onClose();
-    await onSuccess(`Invited ${email} (${role}) to institution.`);
   };
 
   return (
@@ -120,8 +125,9 @@ function parseCsvRows(csvText: string): BulkStudentRow[] {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (!line) continue;
-    if (i === 0 && line.toLowerCase().includes('email')) continue;
     const parts = line.split(',').map((p) => p.trim());
+    const firstColumn = (parts[0] || '').toLowerCase();
+    if (i === 0 && (firstColumn === 'email' || firstColumn === 'student_email')) continue;
     const email = parts[0] || '';
     const fullName = parts[1] || '';
     if (email && email.includes('@')) {
@@ -155,15 +161,20 @@ export function BulkCsvModal({
     }
     setImporting(true);
     setError(null);
-    const res = await bulkImportStudentsAction(tenantId, parsed);
-    setImporting(false);
-    if (!res.success || !res.result) {
-      setError(res.error || 'Bulk import failed.');
-      return;
-    }
-    setResult(res.result);
-    if (res.result.successCount > 0) {
-      await onSuccess(`Imported ${res.result.successCount} students cleanly.`);
+    try {
+      const res = await bulkImportStudentsAction(tenantId, parsed);
+      if (!res.success || !res.result) {
+        setError(res.error || 'Bulk import failed.');
+        return;
+      }
+      setResult(res.result);
+      if (res.result.successCount > 0) {
+        await onSuccess(`Imported ${res.result.successCount} students cleanly.`);
+      }
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Bulk import failed.');
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -229,17 +240,22 @@ export function CreateCourseModal({
     e.preventDefault();
     setSaving(true);
     setError(null);
-    const res = await createCourseAction({ name, code, semester, description });
-    setSaving(false);
-    if (!res.success) {
-      setError(res.error);
-      return;
+    try {
+      const res = await createCourseAction({ name, code, semester, description });
+      if (!res.success) {
+        setError(res.error);
+        return;
+      }
+      setName('');
+      setCode('');
+      setDescription('');
+      onClose();
+      await onSuccess(`Created course ${code.toUpperCase()} (${name}).`);
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to create course.');
+    } finally {
+      setSaving(false);
     }
-    setName('');
-    setCode('');
-    setDescription('');
-    onClose();
-    await onSuccess(`Created course ${code.toUpperCase()} (${name}).`);
   };
 
   return (
@@ -339,28 +355,33 @@ export function CreateExamModal({
     setSaving(true);
     setError(null);
 
-    const start = new Date(Date.now() + 60 * 60 * 1000);
-    const end = new Date(start.getTime() + Math.max(durationMinutes, 60) * 60 * 1000 * 2);
+    try {
+      const start = new Date(Date.now() + 60 * 60 * 1000);
+      const end = new Date(start.getTime() + Math.max(durationMinutes, 60) * 60 * 1000 * 2);
 
-    const res = await createExamAction({
-      courseId: selectedCourseId,
-      title,
-      durationMinutes,
-      totalPoints,
-      startTime: start.toISOString(),
-      endTime: end.toISOString(),
-      requireCamera,
-      requireAudio,
-      requireFullscreen,
-    });
-    setSaving(false);
-    if (!res.success) {
-      setError(res.error);
-      return;
+      const res = await createExamAction({
+        courseId: selectedCourseId,
+        title,
+        durationMinutes,
+        totalPoints,
+        startTime: start.toISOString(),
+        endTime: end.toISOString(),
+        requireCamera,
+        requireAudio,
+        requireFullscreen,
+      });
+      if (!res.success) {
+        setError(res.error);
+        return;
+      }
+      setTitle('');
+      onClose();
+      await onSuccess(`Created draft examination "${title}".`);
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to schedule examination.');
+    } finally {
+      setSaving(false);
     }
-    setTitle('');
-    onClose();
-    await onSuccess(`Created draft examination "${title}".`);
   };
 
   return (
