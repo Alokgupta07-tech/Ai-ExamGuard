@@ -98,7 +98,11 @@ export function ExamWizardShell({ initialExamId }: ExamWizardShellProps) {
   const handleExamUpdated = (updated: ExamEditorView, message?: string) => {
     setExam(updated);
     if (typeof window !== 'undefined' && !initialExamId) {
-      window.history.replaceState(null, '', `/faculty/exams/${updated.id}/edit`);
+      window.history.replaceState(
+        null,
+        '',
+        `/faculty/exams/new?examId=${encodeURIComponent(updated.id)}`
+      );
     }
     if (message) {
       setBanner({ tone: 'success', text: message });

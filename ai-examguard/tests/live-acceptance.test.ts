@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { spawn } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -260,9 +260,17 @@ async function launchChrome(port: number): Promise<{ cdp: LiveCdpClient; cleanup
         // ignore
       }
       try {
-        proc.kill()
+        if (process.platform === 'win32' && proc.pid) {
+          execFileSync('taskkill', ['/PID', String(proc.pid), '/T', '/F'], { stdio: 'ignore' })
+        } else {
+          proc.kill('SIGKILL')
+        }
       } catch {
-        // ignore
+        try {
+          proc.kill()
+        } catch {
+          // ignore
+        }
       }
       setTimeout(() => {
         try {
@@ -270,7 +278,7 @@ async function launchChrome(port: number): Promise<{ cdp: LiveCdpClient; cleanup
         } catch {
           // ignore
         }
-      }, 600)
+      }, 400).unref()
     },
   }
 }
@@ -316,14 +324,19 @@ test('Phase 15 Live Deployed Acceptance Test: HTTPS, security policies, faculty 
     if (error || !data.user) throw new Error(`Create user ${prefix} failed: ${error?.message}`)
     createdUserIds.push(data.user.id)
 
-    const { error: uErr } = await adminDb.from('users').insert({
+    const { error: pErr } = await adminDb.from('profiles').upsert({
       id: data.user.id,
-      tenant_id: tenantId,
       email,
       full_name: fullName,
+    })
+    if (pErr) throw new Error(`Upsert public.profiles ${prefix} failed: ${pErr.message}`)
+
+    const { error: mErr } = await adminDb.from('memberships').insert({
+      tenant_id: tenantId,
+      user_id: data.user.id,
       role,
     })
-    if (uErr) throw new Error(`Insert public.users ${prefix} failed: ${uErr.message}`)
+    if (mErr) throw new Error(`Insert public.memberships ${prefix} failed: ${mErr.message}`)
     return { id: data.user.id, email }
   }
 
@@ -374,7 +387,7 @@ test('Phase 15 Live Deployed Acceptance Test: HTTPS, security policies, faculty 
       createAuthSession(env.url, env.anon, studentTwo.email, pass),
     ])
 
-    const chrome = await launchChrome(9341)
+    const chrome = await launchChrome(9340 + Math.floor(Math.random() * 500))
     chromeCleanup = chrome.cleanup
     const { cdp } = chrome
 
@@ -466,45 +479,65 @@ test('Phase 15 Live Deployed Acceptance Test: HTTPS, security policies, faculty 
       'Authored MCQ persisted in Step 2'
     )
 
-    // Lookup newly created exam ID from URL (?examId=...)
-    const examId = await cdp.eval<string>('new URLSearchParams(window.location.search).get("examId") || ""')
+    // Lookup newly created exam ID from URL (/faculty/exams/[examId]/edit or ?examId=...)
+    const examId = await cdp.eval<string>(`(() => {
+      const m = window.location.pathname.match(/\\/faculty\\/exams\\/([^/]+)\\/edit/);
+      if (m && m[1]) return m[1];
+      return new URLSearchParams(window.location.search).get("examId") || "";
+    })()`)
     assert.ok(examId.length > 10, `Expected created examId in URL, got "${examId}"`)
 
     // Step 4: Assign Student One specifically via exam_assignments UI step
-    await cdp.eval<boolean>(`(() => {
-      const step4Btn = Array.from(document.querySelectorAll('button')).find(b => /Student assignment|Students/i.test(b.textContent || ''));
+    const clickedStep4 = await cdp.eval<boolean>(`(() => {
+      const steps = Array.from(document.querySelectorAll('nav[aria-label="Examination creation steps"] button'));
+      const step4Btn = steps[3] || steps.find(b => /Student assignment/i.test(b.textContent || ''));
       if (!step4Btn) return false;
       step4Btn.click();
       return true;
     })()`)
+    assert.equal(clickedStep4, true, 'Step 4 stepper button must exist')
 
     await waitFor(
-      () => cdp.eval<string>('document.body.innerText'),
+      () => cdp.eval<string>('document.querySelector("main")?.innerText || document.body.innerText'),
       (txt) => txt.includes(studentOne.email),
       15_000,
       'Step 4 roster loaded with Student One'
     )
 
     await cdp.eval<boolean>(`(() => {
-      const rows = Array.from(document.querySelectorAll('label, tr, div')).filter(el => (el.textContent || '').includes(${JSON.stringify(studentOne.email)}));
+      const rows = Array.from(document.querySelectorAll('label')).filter(el => (el.textContent || '').includes(${JSON.stringify(studentOne.email)}));
       for (const row of rows) {
         const cb = row.querySelector('input[type="checkbox"]');
         if (cb && !cb.checked) { cb.click(); break; }
       }
-      const saveBtn = Array.from(document.querySelectorAll('button')).find(b => /Save assignment|Continue to monitoring/i.test(b.textContent || ''));
-      if (saveBtn) saveBtn.click();
       return true;
     })()`)
 
-    await new Promise((r) => setTimeout(r, 800))
+    await new Promise((r) => setTimeout(r, 200))
+
+    await cdp.eval<boolean>(`(() => {
+      const saveBtn = Array.from(document.querySelectorAll('button')).find(b => /Save & continue to monitoring/i.test(b.textContent || ''));
+      if (!saveBtn) return false;
+      saveBtn.click();
+      return true;
+    })()`)
+
+    await waitFor(
+      () => cdp.eval<string>('document.querySelector("main")?.innerText || document.body.innerText'),
+      (txt) => /Monitoring/i.test(txt) && /Preview & publish/i.test(txt),
+      15_000,
+      'Step 4 saved -> transitioned to Step 5 Monitoring'
+    )
 
     // Step 6: Publish examination & Open active window now
-    await cdp.eval<boolean>(`(() => {
-      const step6Btn = Array.from(document.querySelectorAll('button')).find(b => /Preview & publish|Publish/i.test(b.textContent || ''));
+    const clickedStep6 = await cdp.eval<boolean>(`(() => {
+      const steps = Array.from(document.querySelectorAll('nav[aria-label="Examination creation steps"] button'));
+      const step6Btn = steps[5] || steps.find(b => /Preview & publish/i.test(b.textContent || ''));
       if (!step6Btn) return false;
       step6Btn.click();
       return true;
     })()`)
+    assert.equal(clickedStep6, true, 'Step 6 stepper button must exist')
 
     await waitFor(
       () => cdp.eval<boolean>(`Array.from(document.querySelectorAll('button')).some(b => /Publish examination/i.test(b.textContent || '') && !b.disabled)`),
@@ -588,6 +621,7 @@ test('Phase 15 Live Deployed Acceptance Test: HTTPS, security policies, faculty 
 
     disconnectRealtime = async () => {
       await invigSupa.removeChannel(rtChannel)
+      await invigSupa.realtime.disconnect()
     }
 
     await waitFor(async () => realtimeSubscribed, (ok) => ok, 15_000, 'Invigilator Supabase Realtime subscription')
@@ -787,6 +821,9 @@ test('Phase 15 Live Deployed Acceptance Test: HTTPS, security policies, faculty 
     console.log(
       `[PHASE 15 ACCEPTANCE PASSED] Live URL=${LIVE_URL} | examId=${examId} | realtimeEvent=${actualEvent.id} (${actualEvent.event_type}) | score=${finalSession?.score}`
     )
+  } catch (err) {
+    console.error('[PHASE 15 LIVE ACCEPTANCE FAILED]', err)
+    throw err
   } finally {
     if (chromeCleanup) chromeCleanup()
     if (disconnectRealtime) {
