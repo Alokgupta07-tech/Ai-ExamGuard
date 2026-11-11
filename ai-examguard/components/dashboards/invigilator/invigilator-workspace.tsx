@@ -116,8 +116,8 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
       header: 'Examination',
       render: (e) => (
         <div>
-          <p className="font-medium text-[#F8FAFC]">{e.title}</p>
-          <p className="text-xs font-mono text-[#94A3B8]">
+          <p className="font-medium text-foreground">{e.title}</p>
+          <p className="text-xs font-mono text-muted-foreground">
             {e.courseCode} • {e.durationMinutes} min
           </p>
         </div>
@@ -126,7 +126,7 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
     {
       key: 'sessions',
       header: 'Sessions',
-      render: (e) => <span className="font-mono text-xs">{e.sessionCount} active/logged</span>,
+      render: (e) => <span className="font-mono text-xs text-muted-foreground">{e.sessionCount} active/logged</span>,
     },
     {
       key: 'status',
@@ -147,8 +147,8 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
       sortValue: (s) => s.studentName,
       render: (s) => (
         <div>
-          <p className="font-medium text-[#F8FAFC]">{s.studentName}</p>
-          <p className="text-xs text-[#94A3B8]">{s.examTitle}</p>
+          <p className="font-medium text-foreground">{s.studentName}</p>
+          <p className="text-xs text-muted-foreground">{s.examTitle}</p>
         </div>
       ),
     },
@@ -174,10 +174,10 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
       render: (s) => (
         <span
           className={`font-mono text-sm font-bold ${s.trustScore >= 80
-            ? 'text-[#22C55E]'
+            ? 'text-success'
             : s.trustScore >= 60
-              ? 'text-[#F59E0B]'
-              : 'text-[#EF4444]'
+              ? 'text-warning'
+              : 'text-destructive'
             }`}
         >
           {s.trustScore.toFixed(0)}%
@@ -415,49 +415,49 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
 
           {/* Camera & Microphone Connectivity Telemetry */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="rounded-xl border border-[#243249] bg-[#111B2D] p-5 space-y-3">
+            <div className="rounded-lg border border-border bg-card p-5 space-y-3 shadow-xs">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Camera className="h-4 w-4 text-[#38BDF8]" />
-                  <h3 className="font-heading text-sm font-semibold text-[#F8FAFC]">
+                  <Camera className="h-4 w-4 text-primary" />
+                  <h3 className="font-heading text-sm font-semibold text-foreground">
                     Camera Connectivity
                   </h3>
                 </div>
-                <span className="font-mono text-sm font-bold text-[#38BDF8]">
+                <span className="font-mono text-sm font-bold text-primary">
                   {data.metrics.cameraTotalCount > 0 ? `${cameraPct}%` : 'No Sessions'}
                 </span>
               </div>
-              <div className="h-2.5 w-full rounded-full bg-[#17243A] overflow-hidden">
+              <div className="h-2 w-full rounded-full bg-border overflow-hidden">
                 <div
-                  className="h-full bg-[#38BDF8] transition-all"
+                  className="h-full bg-primary transition-all"
                   style={{ width: `${cameraPct}%` }}
                 />
               </div>
-              <p className="text-xs text-[#94A3B8]">
+              <p className="text-xs text-muted-foreground">
                 {data.metrics.cameraConnectedCount} of {data.metrics.cameraTotalCount} candidate
                 sessions reporting active webcam telemetry.
               </p>
             </div>
 
-            <div className="rounded-xl border border-[#243249] bg-[#111B2D] p-5 space-y-3">
+            <div className="rounded-lg border border-border bg-card p-5 space-y-3 shadow-xs">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Mic className="h-4 w-4 text-[#2DD4BF]" />
-                  <h3 className="font-heading text-sm font-semibold text-[#F8FAFC]">
+                  <Mic className="h-4 w-4 text-secondary" />
+                  <h3 className="font-heading text-sm font-semibold text-foreground">
                     Microphone Connectivity
                   </h3>
                 </div>
-                <span className="font-mono text-sm font-bold text-[#2DD4BF]">
+                <span className="font-mono text-sm font-bold text-secondary">
                   {data.metrics.micTotalCount > 0 ? `${micPct}%` : 'No Sessions'}
                 </span>
               </div>
-              <div className="h-2.5 w-full rounded-full bg-[#17243A] overflow-hidden">
+              <div className="h-2 w-full rounded-full bg-border overflow-hidden">
                 <div
-                  className="h-full bg-[#2DD4BF] transition-all"
+                  className="h-full bg-secondary transition-all"
                   style={{ width: `${micPct}%` }}
                 />
               </div>
-              <p className="text-xs text-[#94A3B8]">
+              <p className="text-xs text-muted-foreground">
                 {data.metrics.micConnectedCount} of {data.metrics.micTotalCount} candidate
                 sessions reporting active acoustic baseline monitoring.
               </p>
@@ -506,9 +506,9 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
                   key={sev}
                   type="button"
                   onClick={() => setSeverityFilter(sev)}
-                  className={`rounded-lg border px-2.5 py-1 text-xs uppercase font-mono cursor-pointer ${severityFilter === sev
-                    ? 'border-[#38BDF8]/50 bg-[#38BDF8]/15 text-[#38BDF8]'
-                    : 'border-[#243249] bg-[#111B2D] text-[#94A3B8]'
+                  className={`rounded-md border px-2.5 py-1 text-xs uppercase font-mono cursor-pointer transition-colors ${severityFilter === sev
+                    ? 'border-primary/40 bg-primary/10 text-primary font-semibold shadow-xs'
+                    : 'border-border bg-card text-muted-foreground hover:bg-surface-elevated hover:text-foreground'
                     }`}
                 >
                   {sev}
@@ -550,21 +550,21 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
               header: 'Candidate',
               render: (rc) => (
                 <div>
-                  <p className="font-medium text-[#F8FAFC]">{rc.studentName}</p>
-                  <p className="text-xs text-[#94A3B8]">{rc.examTitle}</p>
+                  <p className="font-medium text-foreground">{rc.studentName}</p>
+                  <p className="text-xs text-muted-foreground">{rc.examTitle}</p>
                 </div>
               ),
             },
             {
               key: 'priority',
               header: 'Priority',
-              render: (rc) => <span className="font-mono text-xs text-[#38BDF8]">P{rc.priority}</span>,
+              render: (rc) => <span className="font-mono text-xs font-semibold text-primary">P{rc.priority}</span>,
             },
             {
               key: 'trust',
               header: 'Trust Score',
               render: (rc) => (
-                <span className="font-mono text-xs font-bold text-[#F59E0B]">
+                <span className="font-mono text-xs font-bold text-warning">
                   {rc.trustScore.toFixed(0)}%
                 </span>
               ),
@@ -613,7 +613,7 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
             subtitle="Count of explainable events grouped by severity tier"
             isEmpty={data.proctorEvents.length === 0}
           >
-            <DistributionBarChart data={alertBreakdown} valueLabel="Events" barColor="#8B5CF6" />
+            <DistributionBarChart data={alertBreakdown} valueLabel="Events" barColor="#176B5B" />
           </ChartCard>
         </div>
       )}

@@ -92,24 +92,26 @@ export function ActivityAreaChart({
       <AreaChart data={data} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
         <defs>
           <linearGradient id="cyanAreaFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#38BDF8" stopOpacity={0.35} />
-            <stop offset="95%" stopColor="#38BDF8" stopOpacity={0.0} />
+            <stop offset="5%" stopColor="#176B5B" stopOpacity={0.25} />
+            <stop offset="95%" stopColor="#176B5B" stopOpacity={0.0} />
           </linearGradient>
           <linearGradient id="tealAreaFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#2DD4BF" stopOpacity={0.3} />
-            <stop offset="95%" stopColor="#2DD4BF" stopOpacity={0.0} />
+            <stop offset="5%" stopColor="#356B9A" stopOpacity={0.2} />
+            <stop offset="95%" stopColor="#356B9A" stopOpacity={0.0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#243249" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border" vertical={false} />
         <XAxis
           dataKey="label"
-          stroke="#94A3B8"
+          stroke="currentColor"
+          className="text-muted-foreground"
           fontSize={11}
           tickLine={false}
           axisLine={false}
         />
         <YAxis
-          stroke="#94A3B8"
+          stroke="currentColor"
+          className="text-muted-foreground"
           fontSize={11}
           tickLine={false}
           axisLine={false}
@@ -120,7 +122,7 @@ export function ActivityAreaChart({
           type="monotone"
           dataKey="primary"
           name={primaryLabel}
-          stroke="#38BDF8"
+          stroke="#176B5B"
           strokeWidth={2}
           fillOpacity={1}
           fill="url(#cyanAreaFill)"
@@ -132,7 +134,7 @@ export function ActivityAreaChart({
             type="monotone"
             dataKey="secondary"
             name={secondaryLabel}
-            stroke="#2DD4BF"
+            stroke="#356B9A"
             strokeWidth={2}
             fillOpacity={1}
             fill="url(#tealAreaFill)"
@@ -151,7 +153,7 @@ export function ActivityAreaChart({
 export function DistributionBarChart({
   data,
   valueLabel = 'Count',
-  barColor = '#38BDF8',
+  barColor = '#176B5B',
 }: {
   data: DistributionPoint[];
   valueLabel?: string;
@@ -167,16 +169,18 @@ export function DistributionBarChart({
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#243249" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border" vertical={false} />
         <XAxis
           dataKey="name"
-          stroke="#94A3B8"
+          stroke="currentColor"
+          className="text-muted-foreground"
           fontSize={11}
           tickLine={false}
           axisLine={false}
         />
         <YAxis
-          stroke="#94A3B8"
+          stroke="currentColor"
+          className="text-muted-foreground"
           fontSize={11}
           tickLine={false}
           axisLine={false}
@@ -187,8 +191,8 @@ export function DistributionBarChart({
           dataKey="value"
           name={valueLabel}
           fill={barColor}
-          radius={[6, 6, 0, 0]}
-          maxBarSize={44}
+          radius={[4, 4, 0, 0]}
+          maxBarSize={40}
           isAnimationActive={!prefersReducedMotion}
           animationDuration={650}
         />

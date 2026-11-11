@@ -1,78 +1,153 @@
-/* AI ExamGuard Design Tokens — Single source of truth for palette, spacing, motion, and typography roles */
+/* AI ExamGuard Design Tokens — Enterprise University Examination Integrity
+ * Default theme: Sophisticated light theme with neutral surfaces, deep teal brand accents,
+ * secondary blue accents, and restrained semantic status colors.
+ */
+
 :root {
-  /* Core Surfaces (Console Graphite Canvas) */
-  --background: #080d18;
-  --sidebar: #0b1220;
-  --card: #111b2d;
-  --popover: #111b2d;
-  --surface-elevated: #17243a;
+  /* Core Canvas & Surfaces (Light Theme Default) */
+  --background: #F6F8F7;
+  --sidebar: #FFFFFF;
+  --card: #FFFFFF;
+  --popover: #FFFFFF;
+  --surface-elevated: #F0F3F2;
 
-  /* Ink */
-  --foreground: #f8fafc;
-  --card-foreground: #f8fafc;
-  --popover-foreground: #f8fafc;
-  --sidebar-foreground: #f8fafc;
-  --muted-foreground: #94a3b8;
-  --ink-secondary: #cbd5e1;
+  /* Typography & Ink */
+  --foreground: #182321;
+  --card-foreground: #182321;
+  --popover-foreground: #182321;
+  --sidebar-foreground: #182321;
+  --ink-secondary: #64716D;
+  --muted-foreground: #87928E;
 
-  /* Hairlines & Controls */
-  --border: #243249;
-  --border-strong: #334766;
-  --input: #243249;
-  --muted: #17243a;
-  --accent: #17243a;
-  --accent-foreground: #f8fafc;
+  /* Hairlines & Control Borders */
+  --border: #E3E9E6;
+  --border-strong: #D1DCD6;
+  --input: #E3E9E6;
+  --muted: #F0F3F2;
+  --accent: #E9F3EF;
+  --accent-foreground: #176B5B;
 
-  /* Signals (Cool instrument = telemetry/action; Amber = human review/person) */
-  --primary: #38bdf8;
-  --primary-foreground: #080d18;
-  --secondary: #2dd4bf;
-  --secondary-foreground: #080d18;
-  --purple: #8b5cf6;
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --critical: #ef4444;
-  --destructive: #ef4444;
-  --destructive-foreground: #f8fafc;
-  --ring: #38bdf8;
+  /* Primary Brand (Deep Teal) */
+  --primary: #176B5B;
+  --primary-hover: #115447;
+  --primary-soft: #E9F3EF;
+  --primary-foreground: #FFFFFF;
+
+  /* Secondary Accent (Refined Slate Blue) */
+  --secondary: #356B9A;
+  --secondary-soft: #EAF1F8;
+  --secondary-foreground: #FFFFFF;
+
+  /* Semantic Status Colors */
+  --success: #27845D;
+  --success-soft: #E8F5EE;
+  --warning: #B7791F;
+  --warning-soft: #FEF7EC;
+  --critical: #C44747;
+  --critical-soft: #FDE8E8;
+  --destructive: #C44747;
+  --destructive-foreground: #FFFFFF;
+  --info: #3977A6;
+  --info-soft: #EAF3FA;
+  --purple: #6B5B95;
+  --purple-soft: #F2EEF8;
+  --ring: #176B5B;
 
   /* Sidebar Tokens */
-  --sidebar-primary: #38bdf8;
-  --sidebar-primary-foreground: #080d18;
-  --sidebar-accent: #17243a;
-  --sidebar-accent-foreground: #38bdf8;
-  --sidebar-border: #243249;
-  --sidebar-ring: #38bdf8;
+  --sidebar-primary: #176B5B;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E9F3EF;
+  --sidebar-accent-foreground: #176B5B;
+  --sidebar-border: #E3E9E6;
+  --sidebar-ring: #176B5B;
 
   /* Charts */
-  --chart-1: #38bdf8;
-  --chart-2: #2dd4bf;
-  --chart-3: #f59e0b;
-  --chart-4: #8b5cf6;
-  --chart-5: #ef4444;
+  --chart-1: #176B5B;
+  --chart-2: #356B9A;
+  --chart-3: #27845D;
+  --chart-4: #B7791F;
+  --chart-5: #C44747;
 
-  /* Hallmark Scale & Motion Tokens */
-  --radius: 0.625rem;
-  --radius-card: 0.625rem;
-  --radius-control: 0.375rem;
+  /* Restrained Scale & Geometry (4–8px radius, consistent 8px grid) */
+  --radius: 0.5rem;          /* 8px default */
+  --radius-card: 0.5rem;     /* 8px max card radius */
+  --radius-control: 0.375rem; /* 6px buttons / inputs */
+  --radius-pill: 9999px;
+
   --space-3xs: 2px;
   --space-2xs: 4px;
   --space-xs: 8px;
   --space-sm: 12px;
   --space-md: 16px;
   --space-lg: 24px;
-  --space-xl: 40px;
-  --space-2xl: 64px;
-  --space-3xl: 96px;
-  --dur-micro: 120ms;
-  --dur-short: 220ms;
-  --dur-long: 420ms;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+
+  /* Refined Micro-Motion Timing */
+  --dur-micro: 140ms;
+  --dur-short: 200ms;
+  --dur-long: 360ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
   --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
 }
 
+/* Optional Dark Theme — Charcoal surfaces, muted hairlines, restrained teal */
 .dark {
-  color-scheme: dark;
-}
+  --background: #0F1413;
+  --sidebar: #141A19;
+  --card: #141A19;
+  --popover: #141A19;
+  --surface-elevated: #1B2321;
 
+  --foreground: #F2F5F4;
+  --card-foreground: #F2F5F4;
+  --popover-foreground: #F2F5F4;
+  --sidebar-foreground: #F2F5F4;
+  --ink-secondary: #9BA7A3;
+  --muted-foreground: #7C8985;
+
+  --border: #222C2A;
+  --border-strong: #2D3A37;
+  --input: #222C2A;
+  --muted: #1B2321;
+  --accent: #1B2A26;
+  --accent-foreground: #38A892;
+
+  --primary: #2BA089;
+  --primary-hover: #228471;
+  --primary-soft: #142E28;
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #487CA8;
+  --secondary-soft: #172A3A;
+  --secondary-foreground: #FFFFFF;
+
+  --success: #34A877;
+  --success-soft: #132D21;
+  --warning: #C78B2E;
+  --warning-soft: #302410;
+  --critical: #D95353;
+  --critical-soft: #331A1A;
+  --destructive: #D95353;
+  --destructive-foreground: #FFFFFF;
+  --info: #488AB9;
+  --info-soft: #152636;
+  --purple: #8675AC;
+  --purple-soft: #241E33;
+  --ring: #2BA089;
+
+  --sidebar-primary: #2BA089;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #1B2A26;
+  --sidebar-accent-foreground: #38A892;
+  --sidebar-border: #222C2A;
+  --sidebar-ring: #2BA089;
+
+  --chart-1: #2BA089;
+  --chart-2: #487CA8;
+  --chart-3: #34A877;
+  --chart-4: #C78B2E;
+  --chart-5: #D95353;
+}

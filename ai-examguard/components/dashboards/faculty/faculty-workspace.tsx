@@ -844,7 +844,7 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
             subtitle="Breakdown across candidate sessions"
             isEmpty={data.sessions.length === 0}
           >
-            <DistributionBarChart data={trustDistribution} valueLabel="Sessions" barColor="#2DD4BF" />
+            <DistributionBarChart data={trustDistribution} valueLabel="Sessions" barColor="#176B5B" />
           </ChartCard>
         </div>
       )}

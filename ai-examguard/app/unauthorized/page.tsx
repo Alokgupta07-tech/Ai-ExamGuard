@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 
 export default function UnauthorizedPage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#080D18] p-4 text-center">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-destructive/40 bg-destructive/10 text-destructive mb-4">
         <ShieldAlert className="h-8 w-8" />
       </div>

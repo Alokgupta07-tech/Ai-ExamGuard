@@ -100,7 +100,7 @@ export function DataTable<T>({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={searchPlaceholder}
-                className="pl-9 bg-sidebar border-border text-foreground placeholder:text-muted-foreground/60"
+                className="pl-9 bg-card border-border text-foreground placeholder:text-muted-foreground/60 shadow-[0_1px_2px_rgba(24,35,33,0.03)]"
               />
             </div>
           ) : (
@@ -116,11 +116,11 @@ export function DataTable<T>({
       {processedData.length === 0 ? (
         <EmptyState title={emptyTitle} description={emptyDescription} />
       ) : (
-        <div className="rounded-lg border border-border bg-card overflow-hidden">
+        <div className="rounded-lg border border-border bg-card overflow-hidden shadow-[0_1px_3px_rgba(24,35,33,0.02)]">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-border bg-surface-elevated/60 text-xs font-medium text-muted-foreground">
+                <tr className="border-b border-border bg-surface-elevated/75 text-[11px] font-semibold text-ink-secondary uppercase tracking-wider">
                   {columns.map((col) => {
                     const isSorted = sortKey === col.key;
                     return (
@@ -156,7 +156,7 @@ export function DataTable<T>({
                     key={getRowKey(row)}
                     onClick={() => onRowClick?.(row)}
                     className={cn(
-                      'transition-colors hover:bg-surface-elevated/45',
+                      'transition-colors hover:bg-surface-elevated/50',
                       onRowClick && 'cursor-pointer'
                     )}
                   >

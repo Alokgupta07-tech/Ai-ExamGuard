@@ -73,7 +73,7 @@
     scroll-behavior: smooth;
     scroll-padding-top: 5rem;
     overflow-x: clip;
-    color-scheme: dark;
+    color-scheme: light dark;
     scrollbar-color: var(--border) var(--background);
   }
 
@@ -96,7 +96,7 @@
   }
 
   ::selection {
-    background: color-mix(in oklab, var(--primary) 26%, transparent);
+    background: color-mix(in oklab, var(--primary) 22%, transparent);
     color: var(--foreground);
   }
 
@@ -145,29 +145,43 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Phase 13: Lightweight Cybersecurity SaaS Grid, Ambient Radial Lighting, Shimmer & Elevation */
-@keyframes cyber-grid-drift {
+/* Subtle, Restrained Ambient Grid & Light Atmosphere */
+@keyframes ambient-grid-drift {
   0% {
     background-position: 0 0, 0 0;
   }
   100% {
-    background-position: 48px 48px, 48px 48px;
+    background-position: 40px 40px, 40px 40px;
   }
 }
 
+.bg-ambient-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--primary) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--primary) 5%, transparent) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 20%, #000 45%, transparent 100%);
+}
+
+.bg-radial-ambient {
+  background-image:
+    radial-gradient(60% 50% at 20% 10%, color-mix(in oklab, var(--primary) 7%, transparent), transparent 70%),
+    radial-gradient(50% 45% at 80% 15%, color-mix(in oklab, var(--secondary) 6%, transparent), transparent 72%);
+}
+
+/* Backward-compatibility aliases for legacy classes */
 .bg-cyber-grid {
   background-image:
-    linear-gradient(to right, rgba(56, 189, 248, 0.055) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(56, 189, 248, 0.055) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse 85% 75% at 50% 25%, #000 50%, transparent 100%);
-  animation: cyber-grid-drift 38s linear infinite;
+    linear-gradient(to right, color-mix(in oklab, var(--primary) 6%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--primary) 6%, transparent) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 20%, #000 45%, transparent 100%);
 }
 
 .bg-radial-cyber {
   background-image:
-    radial-gradient(60% 50% at 18% 8%, rgba(56, 189, 248, 0.14), transparent 70%),
-    radial-gradient(50% 45% at 82% 18%, rgba(45, 212, 191, 0.1), transparent 72%);
+    radial-gradient(60% 50% at 20% 10%, color-mix(in oklab, var(--primary) 7%, transparent), transparent 70%),
+    radial-gradient(50% 45% at 80% 15%, color-mix(in oklab, var(--secondary) 6%, transparent), transparent 72%);
 }
 
 @keyframes skeleton-sweep {
@@ -183,7 +197,7 @@
   background: linear-gradient(
     90deg,
     var(--surface-elevated) 25%,
-    rgba(56, 189, 248, 0.1) 50%,
+    color-mix(in oklab, var(--primary) 8%, var(--surface-elevated)) 50%,
     var(--surface-elevated) 75%
   );
   background-size: 200% 100%;
@@ -209,14 +223,15 @@
 .card-hover-elevate {
   transition:
     transform var(--dur-short) var(--ease-out),
-    border-color var(--dur-short) var(--ease-out),
-    background-color var(--dur-short) var(--ease-out);
+    box-shadow var(--dur-short) var(--ease-out),
+    border-color var(--dur-short) var(--ease-out);
 }
 
 @media (hover: hover) {
   .card-hover-elevate:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1.5px);
     border-color: var(--border-strong);
+    box-shadow: 0 4px 12px -2px rgba(24, 35, 33, 0.05);
   }
 }
 

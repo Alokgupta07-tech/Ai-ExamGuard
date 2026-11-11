@@ -143,7 +143,7 @@ export function ExamWizardShell({ initialExamId }: ExamWizardShellProps) {
               {exam.status}
             </StatusBadge>
           ) : (
-            <StatusBadge tone="cyan">New Draft</StatusBadge>
+            <StatusBadge tone="teal">New Draft</StatusBadge>
           )
         }
         actions={

@@ -57,7 +57,7 @@ export function ExamBottomBar({
           )}
           <Button
             type="button"
-            variant="secondary"
+            variant="default"
             onClick={onRequestSubmit}
             disabled={isSubmitting}
           >

@@ -253,9 +253,14 @@ export function AdminWorkspace({
       sortable: true,
       sortValue: (r) => r.fullName,
       render: (r) => (
-        <div>
-          <p className="font-medium text-[#F8FAFC]">{r.fullName}</p>
-          <p className="text-xs text-[#94A3B8]">{r.email}</p>
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary">
+            {r.fullName.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <p className="font-medium text-foreground">{r.fullName}</p>
+            <p className="text-xs text-muted-foreground">{r.email}</p>
+          </div>
         </div>
       ),
     },
@@ -276,7 +281,7 @@ export function AdminWorkspace({
       sortable: true,
       sortValue: (r) => r.createdAt,
       render: (r) => (
-        <span className="font-mono text-xs text-[#94A3B8]">
+        <span className="font-mono text-xs text-muted-foreground">
           {formatShortDateTime(r.createdAt)}
         </span>
       ),
@@ -290,7 +295,7 @@ export function AdminWorkspace({
             aria-label={`Change role for ${r.fullName}`}
             value={r.role}
             onChange={(e) => handleRoleUpdate(r.userId, e.target.value as UserRole)}
-            className="h-7 rounded-md border border-[#243249] bg-[#0B1220] px-2 text-xs text-[#F8FAFC]"
+            className="h-7 rounded-md border border-border bg-card px-2 text-xs text-foreground shadow-xs focus:border-primary"
           >
             <option value="student">Student</option>
             <option value="instructor">Faculty</option>
@@ -303,7 +308,7 @@ export function AdminWorkspace({
             size="icon-sm"
             onClick={() => handleRemoveMember(r.userId)}
             aria-label={`Remove ${r.fullName}`}
-            className="text-[#94A3B8] hover:text-[#EF4444]"
+            className="text-muted-foreground hover:text-destructive"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
@@ -320,20 +325,20 @@ export function AdminWorkspace({
       sortValue: (c) => c.code,
       render: (c) => (
         <div>
-          <span className="font-mono text-xs text-[#38BDF8]">{c.code}</span>
-          <p className="font-medium text-[#F8FAFC]">{c.name}</p>
+          <span className="font-mono text-xs font-semibold text-primary">{c.code}</span>
+          <p className="font-medium text-foreground">{c.name}</p>
         </div>
       ),
     },
     {
       key: 'semester',
       header: 'Semester',
-      render: (c) => <span className="text-xs text-[#94A3B8]">{c.semester}</span>,
+      render: (c) => <span className="text-xs text-muted-foreground">{c.semester}</span>,
     },
     {
       key: 'instructor',
       header: 'Instructor',
-      render: (c) => <span className="text-xs text-[#F8FAFC]">{c.instructorName}</span>,
+      render: (c) => <span className="text-xs text-foreground font-medium">{c.instructorName}</span>,
     },
     {
       key: 'enrollments',
@@ -341,7 +346,7 @@ export function AdminWorkspace({
       sortable: true,
       sortValue: (c) => c.enrollmentCount,
       render: (c) => (
-        <span className="font-mono text-xs text-[#2DD4BF]">{c.enrollmentCount} students</span>
+        <span className="font-mono text-xs font-semibold text-secondary">{c.enrollmentCount} students</span>
       ),
     },
   ];
@@ -354,8 +359,8 @@ export function AdminWorkspace({
       sortValue: (e) => e.title,
       render: (e) => (
         <div>
-          <p className="font-medium text-[#F8FAFC]">{e.title}</p>
-          <p className="text-xs font-mono text-[#94A3B8]">
+          <p className="font-medium text-foreground">{e.title}</p>
+          <p className="text-xs font-mono text-muted-foreground">
             {e.courseCode} • {e.durationMinutes} min • {e.questionCount} questions
           </p>
         </div>
@@ -365,7 +370,7 @@ export function AdminWorkspace({
       key: 'window',
       header: 'Window',
       render: (e) => (
-        <span className="font-mono text-xs text-[#94A3B8]">
+        <span className="font-mono text-xs text-muted-foreground">
           {formatShortDateTime(e.startTime)}
         </span>
       ),
@@ -422,8 +427,8 @@ export function AdminWorkspace({
       header: 'Question Prompt',
       render: (q) => (
         <div className="max-w-lg">
-          <p className="text-sm text-[#F8FAFC] line-clamp-2">{q.prompt}</p>
-          <p className="text-[11px] font-mono text-[#94A3B8]">
+          <p className="text-sm text-foreground line-clamp-2">{q.prompt}</p>
+          <p className="text-[11px] font-mono text-muted-foreground">
             {q.courseCode} • {q.examTitle}
           </p>
         </div>
@@ -433,7 +438,7 @@ export function AdminWorkspace({
       key: 'type',
       header: 'Format',
       render: (q) => (
-        <StatusBadge tone="cyan" className="font-mono text-[10px]">
+        <StatusBadge tone="teal" className="font-mono text-[10px]">
           {q.type}
         </StatusBadge>
       ),
@@ -441,7 +446,7 @@ export function AdminWorkspace({
     {
       key: 'points',
       header: 'Points',
-      render: (q) => <span className="font-mono text-xs text-[#F8FAFC]">{q.points} pts</span>,
+      render: (q) => <span className="font-mono text-xs font-semibold text-foreground">{q.points} pts</span>,
     },
   ];
 
@@ -617,7 +622,7 @@ export function AdminWorkspace({
           </div>
 
           <div className="space-y-3">
-            <h2 className="font-heading text-lg font-semibold text-[#F8FAFC]">
+            <h2 className="font-heading text-lg font-semibold text-foreground">
               Recent Institutional Activity
             </h2>
             <EventTimeline
@@ -653,10 +658,10 @@ export function AdminWorkspace({
                   key={r}
                   type="button"
                   onClick={() => setRoleOverride(r)}
-                  className={`rounded-lg border px-2.5 py-1 text-xs font-medium capitalize cursor-pointer transition-colors ${
+                  className={`rounded-md border px-3 py-1 text-xs font-medium capitalize cursor-pointer transition-colors ${
                     roleFilter === r
-                      ? 'border-[#38BDF8]/50 bg-[#38BDF8]/15 text-[#38BDF8]'
-                      : 'border-[#243249] bg-[#111B2D] text-[#94A3B8] hover:text-[#F8FAFC]'
+                      ? 'border-primary/40 bg-primary/10 text-primary font-semibold shadow-xs'
+                      : 'border-border bg-card text-muted-foreground hover:bg-surface-elevated hover:text-foreground'
                   }`}
                 >
                   {r === 'instructor' ? 'Faculty' : r}
@@ -745,8 +750,8 @@ export function AdminWorkspace({
                 header: 'Candidate',
                 render: (s) => (
                   <div>
-                    <p className="font-medium text-[#F8FAFC]">{s.studentName}</p>
-                    <p className="text-xs text-[#94A3B8]">{s.examTitle}</p>
+                    <p className="font-medium text-foreground">{s.studentName}</p>
+                    <p className="text-xs text-muted-foreground">{s.examTitle}</p>
                   </div>
                 ),
               },
@@ -754,7 +759,7 @@ export function AdminWorkspace({
                 key: 'trust',
                 header: 'Trust Score',
                 render: (s) => (
-                  <span className="font-mono text-sm font-bold text-[#38BDF8]">
+                  <span className="font-mono text-sm font-bold text-primary">
                     {s.trustScore.toFixed(0)}%
                   </span>
                 ),
@@ -776,18 +781,18 @@ export function AdminWorkspace({
 
           {data.reviewCases.length > 0 && (
             <div className="space-y-3">
-              <h3 className="font-heading text-base font-semibold text-[#F8FAFC]">
+              <h3 className="font-heading text-base font-semibold text-foreground">
                 Flagged Review Queue
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {data.reviewCases.map((rc) => (
                   <div
                     key={rc.id}
-                    className="rounded-xl border border-[#243249] bg-[#111B2D] p-4 flex items-center justify-between gap-3"
+                    className="rounded-lg border border-border bg-card p-4 flex items-center justify-between gap-3 shadow-xs"
                   >
                     <div className="min-w-0">
-                      <p className="font-medium text-[#F8FAFC] truncate">{rc.studentName}</p>
-                      <p className="text-xs text-[#94A3B8] truncate">{rc.examTitle}</p>
+                      <p className="font-medium text-foreground truncate">{rc.studentName}</p>
+                      <p className="text-xs text-muted-foreground truncate">{rc.examTitle}</p>
                     </div>
                     <Button size="xs" variant="outline" onClick={() => setSelectedCase(rc)}>
                       <Eye className="h-3.5 w-3.5" />
@@ -820,41 +825,41 @@ export function AdminWorkspace({
       {section === 'security' && (
         <form
           onSubmit={handleSavePolicies}
-          className="max-w-2xl rounded-xl border border-[#243249] bg-[#111B2D] p-6 space-y-5"
+          className="max-w-2xl rounded-lg border border-border bg-card p-6 space-y-5 shadow-xs"
         >
           <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-[#38BDF8]" />
-            <h3 className="font-heading text-lg font-semibold text-[#F8FAFC]">
+            <Shield className="h-5 w-5 text-primary" />
+            <h3 className="font-heading text-lg font-semibold text-foreground">
               Default Proctoring & Integrity Thresholds
             </h3>
           </div>
 
           <div className="space-y-3 text-sm">
-            <label className="flex items-center justify-between rounded-lg border border-[#243249] bg-[#0B1220] p-3.5 cursor-pointer">
-              <span>Require In-Browser Webcam Monitoring</span>
+            <label className="flex items-center justify-between rounded-md border border-border bg-surface-elevated/40 p-3.5 hover:bg-surface-elevated/70 transition-colors cursor-pointer">
+              <span className="font-medium text-foreground">Require In-Browser Webcam Monitoring</span>
               <input
                 type="checkbox"
                 checked={resolvedSettings.require_camera}
                 onChange={(e) => setRequireCam(e.target.checked)}
-                className="accent-[#38BDF8]"
+                className="accent-primary"
               />
             </label>
-            <label className="flex items-center justify-between rounded-lg border border-[#243249] bg-[#0B1220] p-3.5 cursor-pointer">
-              <span>Require Local Acoustic Energy Detection</span>
+            <label className="flex items-center justify-between rounded-md border border-border bg-surface-elevated/40 p-3.5 hover:bg-surface-elevated/70 transition-colors cursor-pointer">
+              <span className="font-medium text-foreground">Require Local Acoustic Energy Detection</span>
               <input
                 type="checkbox"
                 checked={resolvedSettings.require_audio}
                 onChange={(e) => setRequireMic(e.target.checked)}
-                className="accent-[#38BDF8]"
+                className="accent-primary"
               />
             </label>
-            <label className="flex items-center justify-between rounded-lg border border-[#243249] bg-[#0B1220] p-3.5 cursor-pointer">
-              <span>Enforce Fullscreen & Visibility Guard</span>
+            <label className="flex items-center justify-between rounded-md border border-border bg-surface-elevated/40 p-3.5 hover:bg-surface-elevated/70 transition-colors cursor-pointer">
+              <span className="font-medium text-foreground">Enforce Fullscreen & Visibility Guard</span>
               <input
                 type="checkbox"
                 checked={resolvedSettings.require_fullscreen}
                 onChange={(e) => setRequireFs(e.target.checked)}
-                className="accent-[#38BDF8]"
+                className="accent-primary"
               />
             </label>
           </div>
@@ -898,9 +903,9 @@ export function AdminWorkspace({
       {section === 'settings' && (
         <form
           onSubmit={handleSaveTenantSettings}
-          className="max-w-xl rounded-xl border border-[#243249] bg-[#111B2D] p-6 space-y-4"
+          className="max-w-xl rounded-lg border border-border bg-card p-6 space-y-4 shadow-xs"
         >
-          <h3 className="font-heading text-lg font-semibold text-[#F8FAFC]">
+          <h3 className="font-heading text-lg font-semibold text-foreground">
             University Tenant Identity
           </h3>
           <div className="space-y-1.5">

@@ -135,13 +135,13 @@ export function DeviceReadinessPanel({ compact = false }: { compact?: boolean })
   };
 
   return (
-    <div className="rounded-xl border border-[#243249] bg-[#111B2D] p-5 space-y-4">
+    <div className="rounded-lg border border-border bg-card p-5 space-y-4 shadow-xs">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="font-heading text-base font-semibold text-[#F8FAFC]">
+          <h3 className="font-heading text-base font-semibold text-foreground">
             Browser Device Readiness
           </h3>
-          <p className="text-xs text-[#94A3B8]">
+          <p className="text-xs text-muted-foreground">
             Runs locally via browser MediaDevices & Web Audio API—nothing is uploaded.
           </p>
         </div>
@@ -161,25 +161,25 @@ export function DeviceReadinessPanel({ compact = false }: { compact?: boolean })
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="rounded-lg border border-[#243249] bg-[#0B1220] p-3 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-xs text-[#F8FAFC]">
-            <Camera className="h-4 w-4 text-[#38BDF8]" />
+        <div className="rounded-md border border-border bg-surface-elevated/40 p-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-xs text-foreground font-medium">
+            <Camera className="h-4 w-4 text-primary" />
             <span>Webcam</span>
           </div>
           {renderBadge(state.camera)}
         </div>
 
-        <div className="rounded-lg border border-[#243249] bg-[#0B1220] p-3 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-xs text-[#F8FAFC]">
-            <Mic className="h-4 w-4 text-[#2DD4BF]" />
+        <div className="rounded-md border border-border bg-surface-elevated/40 p-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-xs text-foreground font-medium">
+            <Mic className="h-4 w-4 text-secondary" />
             <span>Microphone</span>
           </div>
           {renderBadge(state.microphone)}
         </div>
 
-        <div className="rounded-lg border border-[#243249] bg-[#0B1220] p-3 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-xs text-[#F8FAFC]">
-            <Maximize2 className="h-4 w-4 text-[#8B5CF6]" />
+        <div className="rounded-md border border-border bg-surface-elevated/40 p-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-xs text-foreground font-medium">
+            <Maximize2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
             <span>Fullscreen API</span>
           </div>
           <StatusBadge tone={state.fullscreenSupported ? 'success' : 'warning'}>
@@ -190,7 +190,7 @@ export function DeviceReadinessPanel({ compact = false }: { compact?: boolean })
 
       {!compact && testing && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-          <div className="rounded-lg border border-[#243249] bg-[#080D18] overflow-hidden aspect-video flex items-center justify-center">
+          <div className="rounded-md border border-border bg-neutral-900 overflow-hidden aspect-video flex items-center justify-center">
             <video
               ref={videoRef}
               autoPlay
@@ -199,18 +199,18 @@ export function DeviceReadinessPanel({ compact = false }: { compact?: boolean })
               className="h-full w-full object-cover"
             />
           </div>
-          <div className="rounded-lg border border-[#243249] bg-[#0B1220] p-4 flex flex-col justify-center space-y-3">
+          <div className="rounded-md border border-border bg-surface-elevated/40 p-4 flex flex-col justify-center space-y-3">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-[#94A3B8]">Live Microphone Energy (RMS)</span>
-              <span className="font-mono text-[#2DD4BF]">{state.audioRms}%</span>
+              <span className="text-muted-foreground font-medium">Live Microphone Energy (RMS)</span>
+              <span className="font-mono text-primary font-semibold">{state.audioRms}%</span>
             </div>
-            <div className="h-3 w-full rounded-full bg-[#17243A] overflow-hidden">
+            <div className="h-2.5 w-full rounded-full bg-border overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-[#2DD4BF] to-[#38BDF8] transition-all duration-75"
+                className="h-full bg-primary transition-all duration-75"
                 style={{ width: `${state.audioRms}%` }}
               />
             </div>
-            <p className="text-xs text-[#94A3B8]">
+            <p className="text-xs text-muted-foreground">
               Speak normally to verify microphone level calibration before launching an assessment.
             </p>
           </div>

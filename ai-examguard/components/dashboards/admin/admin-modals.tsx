@@ -94,7 +94,7 @@ export function InviteMemberModal({
             id="invite-role"
             value={role}
             onChange={(e) => setRole(e.target.value as UserRole)}
-            className="h-9 w-full rounded-lg border border-[#243249] bg-[#0B1220] px-3 text-sm text-[#F8FAFC]"
+            className="h-9 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground shadow-xs focus:border-primary"
           >
             <option value="student">Student</option>
             <option value="instructor">Faculty / Instructor</option>
@@ -203,7 +203,7 @@ export function BulkCsvModal({
             value={csvText}
             onChange={(e) => setCsvText(e.target.value)}
             placeholder={'email,full_name\nstudent1@university.edu,Aarav Sharma\nstudent2@university.edu,Maya Patel'}
-            className="w-full rounded-lg border border-[#243249] bg-[#0B1220] p-3 font-mono text-xs text-[#F8FAFC]"
+            className="w-full rounded-md border border-border bg-card p-3 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-primary"
           />
         </div>
         <div className="flex justify-end gap-2">
@@ -400,7 +400,7 @@ export function CreateExamModal({
             id="exam-course"
             value={selectedCourseId}
             onChange={(e) => setCourseId(e.target.value)}
-            className="h-9 w-full rounded-lg border border-[#243249] bg-[#0B1220] px-3 text-sm text-[#F8FAFC]"
+            className="h-9 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground shadow-xs focus:border-primary"
           >
             {courses.length === 0 ? (
               <option value="">No courses available</option>
@@ -450,35 +450,35 @@ export function CreateExamModal({
           </div>
         </div>
 
-        <div className="rounded-xl border border-[#243249] bg-[#0B1220] p-3.5 space-y-2.5 text-xs">
-          <p className="font-mono uppercase tracking-wider text-[#94A3B8]">
+        <div className="rounded-lg border border-border bg-surface-elevated/40 p-3.5 space-y-2.5 text-xs">
+          <p className="font-mono uppercase tracking-wider text-muted-foreground font-semibold">
             Proctoring Guardrails
           </p>
           <label className="flex items-center justify-between cursor-pointer">
-            <span>Local MediaPipe Face Monitoring</span>
+            <span className="text-foreground font-medium">Local MediaPipe Face Monitoring</span>
             <input
               type="checkbox"
               checked={requireCamera}
               onChange={(e) => setRequireCamera(e.target.checked)}
-              className="accent-[#38BDF8]"
+              className="accent-primary"
             />
           </label>
           <label className="flex items-center justify-between cursor-pointer">
-            <span>Web Audio Acoustic RMS Monitoring</span>
+            <span className="text-foreground font-medium">Web Audio Acoustic RMS Monitoring</span>
             <input
               type="checkbox"
               checked={requireAudio}
               onChange={(e) => setRequireAudio(e.target.checked)}
-              className="accent-[#38BDF8]"
+              className="accent-primary"
             />
           </label>
           <label className="flex items-center justify-between cursor-pointer">
-            <span>Enforce Fullscreen & Visibility Guard</span>
+            <span className="text-foreground font-medium">Enforce Fullscreen & Visibility Guard</span>
             <input
               type="checkbox"
               checked={requireFullscreen}
               onChange={(e) => setRequireFullscreen(e.target.checked)}
-              className="accent-[#38BDF8]"
+              className="accent-primary"
             />
           </label>
         </div>

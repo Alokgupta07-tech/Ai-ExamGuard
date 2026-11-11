@@ -25,18 +25,18 @@ export interface StatCardProps {
 }
 
 const ACCENT_ICON_STYLES: Record<StatAccent, string> = {
-  cyan: 'border-primary/30 bg-primary/10 text-primary',
-  teal: 'border-secondary/30 bg-secondary/10 text-secondary',
-  purple: 'border-purple/30 bg-purple/10 text-purple',
-  success: 'border-success/30 bg-success/10 text-success',
-  warning: 'border-warning/30 bg-warning/10 text-warning',
-  critical: 'border-critical/30 bg-critical/10 text-critical',
+  cyan: 'border-[#176B5B]/20 bg-[#E9F3EF] text-[#176B5B] dark:bg-[#142E28] dark:text-[#38A892]',
+  teal: 'border-[#176B5B]/20 bg-[#E9F3EF] text-[#115447] dark:bg-[#142E28] dark:text-[#38A892]',
+  purple: 'border-[#356B9A]/20 bg-[#EAF1F8] text-[#356B9A] dark:bg-[#172A3A] dark:text-[#78AEDB]',
+  success: 'border-[#27845D]/20 bg-[#E8F5EE] text-[#1C6647] dark:bg-[#132D21] dark:text-[#52C593]',
+  warning: 'border-[#B7791F]/20 bg-[#FEF7EC] text-[#8E5D17] dark:bg-[#302410] dark:text-[#E2A649]',
+  critical: 'border-[#C44747]/20 bg-[#FDE8E8] text-[#A63636] dark:bg-[#331A1A] dark:text-[#EB7777]',
 };
 
 const TREND_STYLES: Record<'up' | 'down' | 'neutral', string> = {
-  up: 'text-success bg-success/10 border-success/25',
-  down: 'text-critical bg-critical/10 border-critical/25',
-  neutral: 'text-muted-foreground bg-surface-elevated border-border',
+  up: 'text-[#1C6647] bg-[#E8F5EE] border-[#27845D]/25 dark:bg-[#132D21] dark:text-[#52C593]',
+  down: 'text-[#A63636] bg-[#FDE8E8] border-[#C44747]/25 dark:bg-[#331A1A] dark:text-[#EB7777]',
+  neutral: 'text-ink-secondary bg-surface-elevated border-border',
 };
 
 /**
@@ -62,7 +62,7 @@ export function StatCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22 }}
       className={cn(
-        'relative rounded-lg border border-border bg-card p-5 transition-colors hover:border-border-strong card-hover-elevate',
+        'relative rounded-lg border border-border bg-card p-5 transition-all shadow-[0_1px_3px_rgba(24,35,33,0.03)] hover:shadow-[0_4px_12px_rgba(24,35,33,0.06)] hover:border-border-strong card-hover-elevate',
         className
       )}
     >

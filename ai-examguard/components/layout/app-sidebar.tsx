@@ -30,17 +30,17 @@ export interface AppSidebarProps {
 }
 
 const ROLE_BADGE_TONE: Record<UserRole, StatusTone> = {
-  admin: 'cyan',
+  admin: 'teal',
   instructor: 'teal',
   invigilator: 'purple',
   student: 'success',
 };
 
 const ROLE_DISPLAY: Record<UserRole, string> = {
-  admin: 'Admin',
+  admin: 'Administrator',
   instructor: 'Faculty',
   invigilator: 'Invigilator',
-  student: 'Student',
+  student: 'Candidate',
 };
 
 /**
@@ -172,7 +172,7 @@ export function AppSidebar({
               return (
                 <React.Fragment key={item.href}>
                   {showSectionHeader && (
-                    <div className="px-3 pt-3.5 pb-1 text-xs font-medium text-muted-foreground">
+                    <div className="px-3 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/75">
                       {item.section}
                     </div>
                   )}
@@ -184,8 +184,8 @@ export function AppSidebar({
                       'relative flex items-center gap-3 rounded-md px-3 py-2 text-xs sm:text-sm font-medium transition-colors',
                       isCollapsed && 'justify-center px-2 py-2.5',
                       active
-                        ? 'text-primary bg-primary/12 border border-primary/30'
-                        : 'text-muted-foreground border border-transparent hover:bg-surface-elevated/60 hover:text-foreground'
+                        ? 'text-primary bg-primary/10 font-semibold'
+                        : 'text-muted-foreground hover:bg-surface-elevated/70 hover:text-foreground'
                     )}
                   >
                     {active && !isCollapsed && (
@@ -197,7 +197,7 @@ export function AppSidebar({
                             : { type: 'spring', stiffness: 420, damping: 34 }
                         }
                         aria-hidden="true"
-                        className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-primary"
+                        className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-sm bg-primary"
                       />
                     )}
                     <Icon
@@ -217,12 +217,15 @@ export function AppSidebar({
         {/* Footer Profile & Logout */}
         <div className="shrink-0 p-3 border-t border-border bg-card/50 space-y-3">
           {!isCollapsed && (
-            <div className="flex items-center justify-between gap-2 px-1">
-              <div className="min-w-0">
+            <div className="flex items-center gap-2.5 px-1">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary">
+                {(userName || userEmail || 'U').charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold text-foreground truncate">
                   {userName || 'Loading…'}
                 </p>
-                <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
+                <p className="text-[11px] text-muted-foreground truncate">{userEmail}</p>
               </div>
               <StatusBadge tone={ROLE_BADGE_TONE[resolvedRole]}>
                 {ROLE_DISPLAY[resolvedRole]}

@@ -110,8 +110,8 @@ export function StudentWorkspace({ section }: { section: StudentSection }) {
       header: 'Examination',
       render: (e) => (
         <div>
-          <p className="font-medium text-[#F8FAFC]">{e.title}</p>
-          <p className="text-xs font-mono text-[#94A3B8]">
+          <p className="font-medium text-foreground">{e.title}</p>
+          <p className="text-xs font-mono text-muted-foreground">
             {e.courseCode} • {e.durationMinutes} mins • {e.totalPoints} pts
           </p>
         </div>
@@ -121,7 +121,7 @@ export function StudentWorkspace({ section }: { section: StudentSection }) {
       key: 'window',
       header: 'Scheduled Window',
       render: (e) => (
-        <span className="font-mono text-xs text-[#94A3B8]">
+        <span className="font-mono text-xs text-muted-foreground">
           {formatShortDateTime(e.startTime)} → {formatShortDateTime(e.endTime)}
         </span>
       ),
@@ -165,7 +165,7 @@ export function StudentWorkspace({ section }: { section: StudentSection }) {
             </Link>
           </Button>
         ) : (
-          <span className="text-xs text-[#94A3B8]">Closed</span>
+          <span className="text-xs text-muted-foreground">Closed</span>
         );
       },
     },
@@ -177,8 +177,8 @@ export function StudentWorkspace({ section }: { section: StudentSection }) {
       header: 'Examination',
       render: (s) => (
         <div>
-          <p className="font-medium text-[#F8FAFC]">{s.examTitle}</p>
-          <p className="text-xs font-mono text-[#94A3B8]">{s.courseCode}</p>
+          <p className="font-medium text-foreground">{s.examTitle}</p>
+          <p className="text-xs font-mono text-muted-foreground">{s.courseCode}</p>
         </div>
       ),
     },
@@ -186,7 +186,7 @@ export function StudentWorkspace({ section }: { section: StudentSection }) {
       key: 'submitted',
       header: 'Submitted',
       render: (s) => (
-        <span className="font-mono text-xs text-[#94A3B8]">
+        <span className="font-mono text-xs text-muted-foreground">
           {formatShortDateTime(s.submittedAt || s.createdAt)}
         </span>
       ),
@@ -195,7 +195,7 @@ export function StudentWorkspace({ section }: { section: StudentSection }) {
       key: 'score',
       header: 'Score',
       render: (s) => (
-        <span className="font-mono text-sm font-semibold text-[#F8FAFC]">
+        <span className="font-mono text-sm font-semibold text-foreground">
           {s.score !== null ? `${s.score.toFixed(1)}%` : 'Pending Review'}
         </span>
       ),
@@ -204,7 +204,7 @@ export function StudentWorkspace({ section }: { section: StudentSection }) {
       key: 'trust',
       header: 'Integrity Score',
       render: (s) => (
-        <span className="font-mono text-xs text-[#22C55E]">{s.trustScore.toFixed(0)}%</span>
+        <span className="font-mono text-xs font-semibold text-success">{s.trustScore.toFixed(0)}%</span>
       ),
     },
     {
@@ -298,12 +298,12 @@ export function StudentWorkspace({ section }: { section: StudentSection }) {
             {/* Examination Calendar / Schedule */}
             <div className="lg:col-span-7 space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="font-heading text-lg font-semibold text-[#F8FAFC]">
+                <h2 className="font-heading text-lg font-semibold text-foreground">
                   Examination Calendar
                 </h2>
                 <Link
                   href="/student/upcoming"
-                  className="text-xs font-mono text-[#38BDF8] hover:underline"
+                  className="text-xs font-mono text-primary hover:underline font-semibold"
                 >
                   View All →
                 </Link>
@@ -334,15 +334,15 @@ export function StudentWorkspace({ section }: { section: StudentSection }) {
                     return (
                       <div
                         key={ex.id}
-                        className="rounded-xl border border-[#243249] bg-[#111B2D] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                        className="rounded-lg border border-border bg-card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs"
                       >
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs text-[#38BDF8]">{ex.courseCode}</span>
+                            <span className="font-mono text-xs font-semibold text-primary">{ex.courseCode}</span>
                             <StatusBadge tone={getExamStatusTone(ex.status)}>{ex.status}</StatusBadge>
                           </div>
-                          <p className="font-heading font-semibold text-[#F8FAFC]">{ex.title}</p>
-                          <p className="text-xs font-mono text-[#94A3B8]">
+                          <p className="font-heading font-semibold text-foreground">{ex.title}</p>
+                          <p className="text-xs font-mono text-muted-foreground">
                             {formatShortDateTime(ex.startTime)} • {ex.durationMinutes} min
                           </p>
                         </div>
@@ -362,12 +362,12 @@ export function StudentWorkspace({ section }: { section: StudentSection }) {
             {/* Recent Results */}
             <div className="lg:col-span-5 space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="font-heading text-lg font-semibold text-[#F8FAFC]">
+                <h2 className="font-heading text-lg font-semibold text-foreground">
                   Recent Results
                 </h2>
                 <Link
                   href="/student/results"
-                  className="text-xs font-mono text-[#38BDF8] hover:underline"
+                  className="text-xs font-mono text-primary hover:underline font-semibold"
                 >
                   History →
                 </Link>
@@ -384,17 +384,17 @@ export function StudentWorkspace({ section }: { section: StudentSection }) {
                   {completedSessions.slice(0, 4).map((s) => (
                     <div
                       key={s.id}
-                      className="rounded-xl border border-[#243249] bg-[#111B2D] p-4 flex items-center justify-between"
+                      className="rounded-lg border border-border bg-card p-4 flex items-center justify-between shadow-xs"
                     >
                       <div>
-                        <p className="font-medium text-[#F8FAFC]">{s.examTitle}</p>
-                        <p className="text-xs text-[#94A3B8]">{s.courseCode}</p>
+                        <p className="font-medium text-foreground">{s.examTitle}</p>
+                        <p className="text-xs text-muted-foreground">{s.courseCode}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-mono text-base font-bold text-[#22C55E]">
+                        <p className="font-mono text-base font-bold text-success">
                           {s.score !== null ? `${s.score.toFixed(1)}%` : 'Pending'}
                         </p>
-                        <p className="text-[11px] font-mono text-[#94A3B8]">
+                        <p className="text-[11px] font-mono text-muted-foreground">
                           Trust {s.trustScore.toFixed(0)}%
                         </p>
                       </div>
@@ -443,48 +443,48 @@ export function StudentWorkspace({ section }: { section: StudentSection }) {
 
       {section === 'profile' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="rounded-xl border border-[#243249] bg-[#111B2D] p-6 space-y-4">
+          <div className="rounded-lg border border-border bg-card p-6 space-y-4 shadow-xs">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#22C55E]/30 bg-[#22C55E]/10 text-[#22C55E]">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-success/30 bg-success/10 text-success">
                 <UserCircle className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="font-heading text-lg font-semibold text-[#F8FAFC]">
+                <h3 className="font-heading text-lg font-semibold text-foreground">
                   {data.profile.fullName}
                 </h3>
-                <p className="text-xs text-[#94A3B8]">{data.profile.email}</p>
+                <p className="text-xs text-muted-foreground">{data.profile.email}</p>
               </div>
             </div>
-            <div className="border-t border-[#243249] pt-4 text-xs space-y-2">
+            <div className="border-t border-border pt-4 text-xs space-y-2">
               <div className="flex justify-between">
-                <span className="text-[#94A3B8]">Institution</span>
-                <span className="font-medium text-[#F8FAFC]">{data.tenantName}</span>
+                <span className="text-muted-foreground">Institution</span>
+                <span className="font-medium text-foreground">{data.tenantName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#94A3B8]">Enrolled Courses</span>
-                <span className="font-mono text-[#38BDF8]">{data.enrolledCourses.length}</span>
+                <span className="text-muted-foreground">Enrolled Courses</span>
+                <span className="font-mono font-semibold text-primary">{data.enrolledCourses.length}</span>
               </div>
             </div>
           </div>
 
-          <div className="rounded-xl border border-[#243249] bg-[#111B2D] p-6 space-y-3">
-            <h3 className="font-heading text-base font-semibold text-[#F8FAFC]">
+          <div className="rounded-lg border border-border bg-card p-6 space-y-3 shadow-xs">
+            <h3 className="font-heading text-base font-semibold text-foreground">
               Enrolled Course Catalog
             </h3>
             {data.enrolledCourses.length === 0 ? (
-              <p className="text-sm text-[#94A3B8]">Not enrolled in any courses yet.</p>
+              <p className="text-sm text-muted-foreground">Not enrolled in any courses yet.</p>
             ) : (
               <div className="space-y-2">
                 {data.enrolledCourses.map((c) => (
                   <div
                     key={c.id}
-                    className="rounded-lg border border-[#243249] bg-[#0B1220] px-3 py-2.5 flex items-center justify-between text-xs"
+                    className="rounded-md border border-border bg-surface-elevated/40 px-3 py-2.5 flex items-center justify-between text-xs"
                   >
-                    <span className="font-medium text-[#F8FAFC]">
-                      <span className="font-mono text-[#38BDF8] mr-2">{c.code}</span>
+                    <span className="font-medium text-foreground">
+                      <span className="font-mono text-primary font-semibold mr-2">{c.code}</span>
                       {c.name}
                     </span>
-                    <span className="text-[#94A3B8]">{c.semester}</span>
+                    <span className="text-muted-foreground">{c.semester}</span>
                   </div>
                 ))}
               </div>
@@ -505,19 +505,19 @@ export function StudentWorkspace({ section }: { section: StudentSection }) {
             title="Human Invigilator Review"
             description="Automated monitoring indicators never automatically fail or disqualify your exam. All flagged signals are reviewed by a human proctor."
           />
-          <div className="md:col-span-2 rounded-xl border border-[#243249] bg-[#111B2D] p-6 space-y-3">
-            <div className="flex items-center gap-2 text-[#F8FAFC]">
-              <HelpCircle className="h-5 w-5 text-[#38BDF8]" />
+          <div className="md:col-span-2 rounded-lg border border-border bg-card p-6 space-y-3 shadow-xs">
+            <div className="flex items-center gap-2 text-foreground">
+              <HelpCircle className="h-5 w-5 text-primary" />
               <h3 className="font-heading text-base font-semibold">
                 Pre-Exam Troubleshooting Checklist
               </h3>
             </div>
-            <ul className="space-y-2 text-sm text-[#94A3B8] list-disc pl-5">
+            <ul className="space-y-2 text-sm text-muted-foreground list-disc pl-5">
               <li>Use an updated Chromium, Firefox, or Safari browser with camera/mic access enabled.</li>
               <li>Ensure adequate front-facing lighting so single-face presence remains clear.</li>
               <li>Remain in fullscreen exam mode and avoid switching tabs during timed attempts.</li>
             </ul>
-            <div className="pt-2 flex items-center gap-2 text-xs text-[#22C55E]">
+            <div className="pt-2 flex items-center gap-2 text-xs text-success">
               <Lock className="h-3.5 w-3.5" />
               <span>Protected by {data.tenantName} Academic Integrity Policy</span>
               <ShieldCheck className="h-3.5 w-3.5 ml-2" />

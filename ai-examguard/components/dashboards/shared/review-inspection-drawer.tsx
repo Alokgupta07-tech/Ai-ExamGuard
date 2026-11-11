@@ -95,7 +95,7 @@ export function ReviewInspectionDrawer({
               size="sm"
               disabled={isSubmitting}
               onClick={() => handleDecision('CASE_CLEARED', 'cleared')}
-              className="border-[#22C55E]/40 text-[#22C55E] hover:bg-[#22C55E]/10"
+              className="border-success/30 text-success hover:bg-success/10"
             >
               {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
               Clear Case
@@ -108,7 +108,7 @@ export function ReviewInspectionDrawer({
                 size="sm"
                 disabled={isSubmitting}
                 onClick={() => handleDecision('WARNING_SENT', 'in_review')}
-                className="border-[#F59E0B]/40 text-[#F59E0B] hover:bg-[#F59E0B]/10"
+                className="border-warning/30 text-warning hover:bg-warning/10"
               >
                 <Send className="h-3.5 w-3.5" />
                 Log Warning
@@ -268,7 +268,7 @@ export function ReviewInspectionDrawer({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Document context or rationale for clearing, warning, or escalating..."
-              className="w-full rounded-lg border border-[#243249] bg-[#111B2D] p-3 text-sm text-[#F8FAFC] placeholder:text-[#94A3B8]/60 focus:border-[#38BDF8] focus:outline-none"
+              className="w-full rounded-md border border-border bg-background p-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
             />
           </div>
         </>
