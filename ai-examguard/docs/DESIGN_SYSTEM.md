@@ -69,3 +69,4 @@ Loaded via `next/font/google` in [`app/layout.tsx`](../app/layout.tsx):
 5. `HowItWorksSection` — Four-stage session lifecycle (Authoring -> Pre-Flight -> Edge Telemetry -> Human Review).
 6. `ArchitecturePrivacySection` — Multi-tenant PostgreSQL RLS security, integration readiness, and zero raw video/audio retention commitments.
 7. `CtaFooterSection` — Institutional provisioning CTA and footer.
+
