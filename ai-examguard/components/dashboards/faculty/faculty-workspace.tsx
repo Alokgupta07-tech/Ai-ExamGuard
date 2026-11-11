@@ -8,6 +8,7 @@ import {
   CalendarClock,
   CheckCircle2,
   Download,
+  Edit3,
   Eye,
   FilePlus2,
   Layers,
@@ -15,14 +16,18 @@ import {
   Plus,
   RefreshCw,
   ShieldAlert,
+  Trash2,
   Users,
 } from 'lucide-react';
 import { useDashboardData } from '@/hooks/use-dashboard-data';
 import {
   createExamAction,
   getFacultyDashboardAction,
-  updateExamStatusAction,
 } from '@/lib/actions/dashboard-actions';
+import {
+  deleteDraftExamAction,
+  updateExamStatusAction,
+} from '@/lib/actions/exam-actions';
 import {
   downloadCsvFile,
   formatShortDateTime,
@@ -130,6 +135,16 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
     await refresh();
   };
 
+  const handleDeleteDraft = async (examId: string) => {
+    const res = await deleteDraftExamAction(examId);
+    if (!res.success) {
+      setBanner({ tone: 'critical', text: res.error });
+      return;
+    }
+    setBanner({ tone: 'success', text: 'Draft examination deleted.' });
+    await refresh();
+  };
+
   const handleCreateExamSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const targetCourseId = courseId || data.courses[0]?.id;
@@ -176,9 +191,12 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
       sortValue: (e) => e.title,
       render: (e) => (
         <div>
-          <p className="font-medium text-[#F8FAFC]">{e.title}</p>
-          <p className="text-xs font-mono text-[#94A3B8]">
-            {e.courseCode} • {e.durationMinutes} min • {e.questionCount} questions
+          <p className="font-medium text-foreground">{e.title}</p>
+          <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-2.5 gap-y-0.5 tabular-nums">
+            <span className="font-mono text-primary">{e.courseCode}</span>
+            <span>{e.durationMinutes} min</span>
+            <span>{e.questionCount} MCQs</span>
+            <span>{e.totalPoints} pts (pass {e.passingMarks})</span>
           </p>
         </div>
       ),
@@ -187,7 +205,7 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
       key: 'schedule',
       header: 'Schedule',
       render: (e) => (
-        <span className="font-mono text-xs text-[#94A3B8]">
+        <span className="font-mono text-xs text-muted-foreground">
           {formatShortDateTime(e.startTime)}
         </span>
       ),
@@ -205,11 +223,28 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
       key: 'actions',
       header: 'Actions',
       render: (e) => (
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Button asChild size="xs" variant="outline">
+            <Link href={`/faculty/exams/${e.id}/edit`}>
+              <Edit3 className="h-3 w-3" />
+              Edit Wizard
+            </Link>
+          </Button>
           {e.status === 'draft' && (
-            <Button size="xs" variant="outline" onClick={() => handleStatusChange(e.id, 'published')}>
-              Publish
-            </Button>
+            <>
+              <Button size="xs" variant="outline" onClick={() => handleStatusChange(e.id, 'published')}>
+                Publish
+              </Button>
+              <Button
+                size="icon-xs"
+                variant="ghost"
+                aria-label="Delete draft examination"
+                className="text-destructive hover:text-destructive"
+                onClick={() => handleDeleteDraft(e.id)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </>
           )}
           {e.status === 'published' && (
             <Button size="xs" variant="outline" onClick={() => handleStatusChange(e.id, 'active')}>
@@ -232,9 +267,9 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
       header: 'Prompt',
       render: (q) => (
         <div>
-          <p className="text-sm text-[#F8FAFC] line-clamp-2">{q.prompt}</p>
-          <p className="text-[11px] font-mono text-[#94A3B8]">
-            {q.courseCode} • {q.examTitle}
+          <p className="text-sm text-foreground line-clamp-2">{q.prompt}</p>
+          <p className="text-xs font-mono text-muted-foreground">
+            {q.courseCode} · {q.examTitle}
           </p>
         </div>
       ),
@@ -259,8 +294,8 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
       sortValue: (s) => s.studentName,
       render: (s) => (
         <div>
-          <p className="font-medium text-[#F8FAFC]">{s.studentName}</p>
-          <p className="text-xs text-[#94A3B8]">{s.studentEmail}</p>
+          <p className="font-medium text-foreground">{s.studentName}</p>
+          <p className="text-xs text-muted-foreground">{s.studentEmail}</p>
         </div>
       ),
     },
@@ -268,8 +303,8 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
       key: 'exam',
       header: 'Examination',
       render: (s) => (
-        <span className="text-xs text-[#F8FAFC]">
-          {s.courseCode} • {s.examTitle}
+        <span className="text-xs text-foreground">
+          {s.courseCode} · {s.examTitle}
         </span>
       ),
     },
@@ -277,7 +312,7 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
       key: 'score',
       header: 'Score',
       render: (s) => (
-        <span className="font-mono text-xs text-[#F8FAFC]">
+        <span className="font-mono text-xs tabular-nums text-foreground">
           {s.score !== null ? `${s.score.toFixed(1)}%` : 'Pending'}
         </span>
       ),
@@ -286,7 +321,7 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
       key: 'trust',
       header: 'Trust Score',
       render: (s) => (
-        <span className="font-mono text-xs font-semibold text-[#38BDF8]">
+        <span className="font-mono text-xs font-semibold tabular-nums text-primary">
           {s.trustScore.toFixed(0)}%
         </span>
       ),
@@ -434,7 +469,7 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
             </ChartCard>
 
             <div className="space-y-3">
-              <h2 className="font-heading text-lg font-semibold text-[#F8FAFC]">
+              <h2 className="font-heading text-lg font-semibold text-foreground">
                 Recent Examination Activity
               </h2>
               <EventTimeline
@@ -470,12 +505,12 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
       {section === 'create-exam' && (
         <form
           onSubmit={handleCreateExamSubmit}
-          className="max-w-2xl rounded-xl border border-[#243249] bg-[#111B2D] p-6 space-y-5"
+          className="max-w-2xl rounded-lg border border-border bg-card p-6 space-y-5"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-[#2DD4BF]" />
-              <h2 className="font-heading text-lg font-semibold text-[#F8FAFC]">
+              <BookOpen className="h-5 w-5 text-secondary" />
+              <h2 className="font-heading text-lg font-semibold text-foreground">
                 Examination Blueprint
               </h2>
             </div>
@@ -493,14 +528,14 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
               id="fac-course"
               value={courseId || data.courses[0]?.id || ''}
               onChange={(e) => setCourseId(e.target.value)}
-              className="h-9 w-full rounded-lg border border-[#243249] bg-[#0B1220] px-3 text-sm text-[#F8FAFC]"
+              className="h-9 w-full rounded-md border border-border bg-sidebar px-3 text-sm text-foreground"
             >
               {data.courses.length === 0 ? (
                 <option value="">No courses assigned to you yet</option>
               ) : (
                 data.courses.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.code} — {c.name} ({c.semester})
+                    {c.code} · {c.name} ({c.semester})
                   </option>
                 ))
               )}
@@ -526,7 +561,7 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
               value={examDesc}
               onChange={(e) => setExamDesc(e.target.value)}
               placeholder="Closed-book examination. Maintain camera framing throughout..."
-              className="w-full rounded-lg border border-[#243249] bg-[#0B1220] p-3 text-sm text-[#F8FAFC]"
+              className="w-full rounded-md border border-border bg-sidebar p-3 text-sm text-foreground"
             />
           </div>
 
@@ -555,9 +590,9 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
             </div>
           </div>
 
-          <div className="rounded-xl border border-[#243249] bg-[#0B1220] p-4 space-y-2.5 text-sm">
-            <p className="text-xs font-mono uppercase tracking-wider text-[#94A3B8]">
-              Integrity Guardrails
+          <div className="rounded-md border border-border bg-sidebar p-4 space-y-2.5 text-sm">
+            <p className="text-xs font-medium text-muted-foreground">
+              Integrity guardrails
             </p>
             <label className="flex items-center justify-between cursor-pointer">
               <span>Require Local Face Presence Check</span>
@@ -565,7 +600,7 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
                 type="checkbox"
                 checked={requireCamera}
                 onChange={(e) => setRequireCamera(e.target.checked)}
-                className="accent-[#38BDF8]"
+                className="accent-primary"
               />
             </label>
             <label className="flex items-center justify-between cursor-pointer">
@@ -574,16 +609,16 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
                 type="checkbox"
                 checked={requireAudio}
                 onChange={(e) => setRequireAudio(e.target.checked)}
-                className="accent-[#38BDF8]"
+                className="accent-primary"
               />
             </label>
             <label className="flex items-center justify-between cursor-pointer">
-              <span>Require Fullscreen & Focus Lock</span>
+              <span>Require Fullscreen &amp; Focus Lock</span>
               <input
                 type="checkbox"
                 checked={requireFullscreen}
                 onChange={(e) => setRequireFullscreen(e.target.checked)}
-                className="accent-[#38BDF8]"
+                className="accent-primary"
               />
             </label>
           </div>
@@ -616,8 +651,8 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
               header: 'Student',
               render: (enr) => (
                 <div>
-                  <p className="font-medium text-[#F8FAFC]">{enr.studentName}</p>
-                  <p className="text-xs text-[#94A3B8]">{enr.studentEmail}</p>
+                  <p className="font-medium text-foreground">{enr.studentName}</p>
+                  <p className="text-xs text-muted-foreground">{enr.studentEmail}</p>
                 </div>
               ),
             },
@@ -625,8 +660,8 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
               key: 'course',
               header: 'Enrolled Course',
               render: (enr) => (
-                <span className="font-mono text-xs text-[#2DD4BF]">
-                  {enr.courseCode} • {enr.courseName}
+                <span className="font-mono text-xs text-secondary">
+                  {enr.courseCode} · {enr.courseName}
                 </span>
               ),
             },
@@ -634,7 +669,7 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
               key: 'date',
               header: 'Enrolled At',
               render: (enr) => (
-                <span className="font-mono text-xs text-[#94A3B8]">
+                <span className="font-mono text-xs text-muted-foreground">
                   {formatShortDateTime(enr.enrolledAt)}
                 </span>
               ),
@@ -701,8 +736,8 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
               header: 'Candidate',
               render: (rc) => (
                 <div>
-                  <p className="font-medium text-[#F8FAFC]">{rc.studentName}</p>
-                  <p className="text-xs text-[#94A3B8]">{rc.examTitle}</p>
+                  <p className="font-medium text-foreground">{rc.studentName}</p>
+                  <p className="text-xs text-muted-foreground">{rc.examTitle}</p>
                 </div>
               ),
             },
@@ -710,7 +745,7 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
               key: 'trust',
               header: 'Trust Score',
               render: (rc) => (
-                <span className="font-mono text-xs font-bold text-[#F59E0B]">
+                <span className="font-mono text-xs font-bold tabular-nums text-warning">
                   {rc.trustScore.toFixed(0)}%
                 </span>
               ),

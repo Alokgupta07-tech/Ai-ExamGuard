@@ -27,12 +27,12 @@ export interface EventTimelineProps {
   className?: string;
 }
 
-const SEVERITY_MAP: Record<TimelineSeverity, { tone: StatusTone; dot: string; label: string }> = {
-  info: { tone: 'cyan', dot: 'bg-[#38BDF8] border-[#38BDF8]/40', label: 'Info' },
-  low: { tone: 'teal', dot: 'bg-[#2DD4BF] border-[#2DD4BF]/40', label: 'Low' },
-  medium: { tone: 'warning', dot: 'bg-[#F59E0B] border-[#F59E0B]/40', label: 'Medium' },
-  high: { tone: 'critical', dot: 'bg-[#EF4444] border-[#EF4444]/40', label: 'High' },
-  critical: { tone: 'critical', dot: 'bg-[#EF4444] border-[#EF4444]/60', label: 'Critical' },
+const SEVERITY_MAP: Record<TimelineSeverity, { tone: StatusTone; dotBg: string; dotRing: string; label: string }> = {
+  info: { tone: 'cyan', dotBg: 'bg-primary', dotRing: 'border-primary/40', label: 'Info' },
+  low: { tone: 'teal', dotBg: 'bg-secondary', dotRing: 'border-secondary/40', label: 'Low' },
+  medium: { tone: 'warning', dotBg: 'bg-warning', dotRing: 'border-warning/40', label: 'Medium' },
+  high: { tone: 'critical', dotBg: 'bg-destructive', dotRing: 'border-destructive/40', label: 'High' },
+  critical: { tone: 'critical', dotBg: 'bg-destructive', dotRing: 'border-destructive/60', label: 'Critical' },
 };
 
 function CategoryIcon({ category }: { category?: TimelineCategory }) {
@@ -51,7 +51,7 @@ function CategoryIcon({ category }: { category?: TimelineCategory }) {
 }
 
 /**
- * Chronological integrity telemetry & audit trail timeline with explainable event metadata.
+ * Chronological integrity telemetry and audit trail timeline with explainable event metadata.
  */
 export function EventTimeline({
   events,
@@ -76,7 +76,7 @@ export function EventTimeline({
       {/* Vertical rail */}
       <div
         aria-hidden="true"
-        className="absolute left-[11px] top-2 bottom-2 w-px bg-gradient-to-b from-[#38BDF8]/50 via-[#243249] to-transparent"
+        className="absolute left-[11px] top-2 bottom-2 w-px bg-border"
       />
 
       {events.map((event) => {
@@ -89,11 +89,11 @@ export function EventTimeline({
             <span
               aria-hidden="true"
               className={cn(
-                'absolute -left-6 top-3 flex h-5 w-5 items-center justify-center rounded-full border bg-[#080D18]',
-                sev.dot.replace(/bg-\S+/, '')
+                'absolute -left-6 top-3 flex h-5 w-5 items-center justify-center rounded-full border bg-background',
+                sev.dotRing
               )}
             >
-              <span className={cn('h-2 w-2 rounded-full', sev.dot.split(' ')[0])} />
+              <span className={cn('h-2 w-2 rounded-full', sev.dotBg)} />
             </span>
 
             <div
@@ -107,33 +107,33 @@ export function EventTimeline({
                 }
               }}
               className={cn(
-                'rounded-xl border border-[#243249] bg-[#111B2D] p-4 transition-colors',
-                clickable && 'cursor-pointer hover:border-[#38BDF8]/50 hover:bg-[#17243A]/70'
+                'rounded-lg border border-border bg-card p-4 transition-colors',
+                clickable && 'cursor-pointer hover:border-primary/50 hover:bg-surface-elevated/70'
               )}
             >
               <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-[#94A3B8]">
+                  <span className="text-muted-foreground">
                     <CategoryIcon category={event.category} />
                   </span>
-                  <h4 className="font-heading text-sm font-semibold text-[#F8FAFC] truncate">
+                  <h4 className="font-heading text-sm font-semibold text-foreground truncate">
                     {event.title}
                   </h4>
                   <StatusBadge
                     tone={sev.tone}
                     pulse={event.severity === 'critical'}
-                    className="text-[10px] py-0 px-2"
+                    className="text-xs py-0 px-2"
                   >
                     {sev.label}
                   </StatusBadge>
                 </div>
 
-                <span className="text-[11px] font-mono text-[#94A3B8] shrink-0">
+                <span className="text-xs font-mono tabular-nums text-muted-foreground shrink-0">
                   {event.timestamp}
                 </span>
               </div>
 
-              <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                 {event.description}
               </p>
 
@@ -142,10 +142,10 @@ export function EventTimeline({
                   {Object.entries(event.metadata).map(([key, val]) => (
                     <span
                       key={key}
-                      className="inline-flex items-center gap-1 rounded-md border border-[#243249] bg-[#0B1220] px-2 py-0.5 text-[11px] font-mono text-[#94A3B8]"
+                      className="inline-flex items-center gap-1 rounded border border-border bg-sidebar px-2 py-0.5 text-xs font-mono text-muted-foreground"
                     >
-                      <span className="text-[#38BDF8]">{key}:</span>
-                      <span className="text-[#F8FAFC]">{String(val)}</span>
+                      <span className="text-primary">{key}:</span>
+                      <span className="text-foreground">{String(val)}</span>
                     </span>
                   ))}
                 </div>

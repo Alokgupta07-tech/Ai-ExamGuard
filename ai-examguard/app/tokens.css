@@ -1,0 +1,78 @@
+/* AI ExamGuard Design Tokens — Single source of truth for palette, spacing, motion, and typography roles */
+:root {
+  /* Core Surfaces (Console Graphite Canvas) */
+  --background: #080d18;
+  --sidebar: #0b1220;
+  --card: #111b2d;
+  --popover: #111b2d;
+  --surface-elevated: #17243a;
+
+  /* Ink */
+  --foreground: #f8fafc;
+  --card-foreground: #f8fafc;
+  --popover-foreground: #f8fafc;
+  --sidebar-foreground: #f8fafc;
+  --muted-foreground: #94a3b8;
+  --ink-secondary: #cbd5e1;
+
+  /* Hairlines & Controls */
+  --border: #243249;
+  --border-strong: #334766;
+  --input: #243249;
+  --muted: #17243a;
+  --accent: #17243a;
+  --accent-foreground: #f8fafc;
+
+  /* Signals (Cool instrument = telemetry/action; Amber = human review/person) */
+  --primary: #38bdf8;
+  --primary-foreground: #080d18;
+  --secondary: #2dd4bf;
+  --secondary-foreground: #080d18;
+  --purple: #8b5cf6;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --critical: #ef4444;
+  --destructive: #ef4444;
+  --destructive-foreground: #f8fafc;
+  --ring: #38bdf8;
+
+  /* Sidebar Tokens */
+  --sidebar-primary: #38bdf8;
+  --sidebar-primary-foreground: #080d18;
+  --sidebar-accent: #17243a;
+  --sidebar-accent-foreground: #38bdf8;
+  --sidebar-border: #243249;
+  --sidebar-ring: #38bdf8;
+
+  /* Charts */
+  --chart-1: #38bdf8;
+  --chart-2: #2dd4bf;
+  --chart-3: #f59e0b;
+  --chart-4: #8b5cf6;
+  --chart-5: #ef4444;
+
+  /* Hallmark Scale & Motion Tokens */
+  --radius: 0.625rem;
+  --radius-card: 0.625rem;
+  --radius-control: 0.375rem;
+  --space-3xs: 2px;
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+  --space-2xl: 64px;
+  --space-3xl: 96px;
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+.dark {
+  color-scheme: dark;
+}
+

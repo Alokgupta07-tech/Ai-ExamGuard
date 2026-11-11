@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { DashboardService } from '@/lib/services/dashboard';
+import { ExamEngineService } from '@/lib/services/exam-engine';
 import type { ExamStatus, TenantSettings } from '@/types/database';
 import type {
   AdminDashboardPayload,
@@ -87,9 +88,10 @@ export async function updateExamStatusAction(
   status: ExamStatus
 ): Promise<ActionResult<null>> {
   try {
-    await DashboardService.updateExamStatus(examId, status);
+    await ExamEngineService.updateExamStatus(examId, status);
     revalidatePath('/admin');
     revalidatePath('/faculty');
+    revalidatePath('/faculty/exams');
     revalidatePath('/student');
     revalidatePath('/invigilator');
     return { success: true, data: null };

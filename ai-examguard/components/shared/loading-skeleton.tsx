@@ -14,14 +14,14 @@ export interface LoadingSkeletonProps {
 function PulseBlock({ className }: { className?: string }) {
   return (
     <div
-      className={cn('animate-pulse rounded-md bg-[#17243A]', className)}
+      className={cn('animate-pulse rounded-md bg-surface-elevated', className)}
       aria-hidden="true"
     />
   );
 }
 
 /**
- * Reusable loading skeleton patterns aligned with AI ExamGuard card & table geometry.
+ * Reusable loading skeleton patterns aligned with AI ExamGuard panel & table geometry.
  */
 export function LoadingSkeleton({
   variant = 'card',
@@ -38,11 +38,11 @@ export function LoadingSkeleton({
         {Array.from({ length: count }).map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-[#243249] bg-[#111B2D] p-5 space-y-4"
+            className="rounded-lg border border-border bg-card p-5 space-y-4"
           >
             <div className="flex items-center justify-between">
               <PulseBlock className="h-3.5 w-24" />
-              <PulseBlock className="h-10 w-10 rounded-lg" />
+              <PulseBlock className="h-9 w-9 rounded-md" />
             </div>
             <PulseBlock className="h-8 w-20" />
             <PulseBlock className="h-3 w-32" />
@@ -55,19 +55,16 @@ export function LoadingSkeleton({
   if (variant === 'table') {
     return (
       <div
-        className={cn(
-          'rounded-xl border border-[#243249] bg-[#111B2D] overflow-hidden',
-          className
-        )}
+        className={cn('rounded-lg border border-border bg-card overflow-hidden', className)}
         aria-busy="true"
         aria-label="Loading table"
       >
-        <div className="border-b border-[#243249] bg-[#17243A]/40 px-4 py-3 flex items-center gap-4">
+        <div className="border-b border-border bg-surface-elevated/40 px-4 py-3 flex items-center gap-4">
           <PulseBlock className="h-4 w-32" />
           <PulseBlock className="h-4 w-24" />
           <PulseBlock className="h-4 w-28 ml-auto" />
         </div>
-        <div className="divide-y divide-[#243249]/60">
+        <div className="divide-y divide-border/60">
           {Array.from({ length: count }).map((_, i) => (
             <div key={i} className="px-4 py-3.5 flex items-center gap-4">
               <PulseBlock className="h-8 w-8 rounded-full shrink-0" />
@@ -75,7 +72,7 @@ export function LoadingSkeleton({
                 <PulseBlock className="h-3.5 w-40" />
                 <PulseBlock className="h-2.5 w-24" />
               </div>
-              <PulseBlock className="h-6 w-20 rounded-full" />
+              <PulseBlock className="h-6 w-20 rounded-md" />
             </div>
           ))}
         </div>
@@ -89,9 +86,9 @@ export function LoadingSkeleton({
         {Array.from({ length: count }).map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-[#243249] bg-[#111B2D] p-4 flex items-center gap-4"
+            className="rounded-lg border border-border bg-card p-4 flex items-center gap-4"
           >
-            <PulseBlock className="h-10 w-10 rounded-lg shrink-0" />
+            <PulseBlock className="h-10 w-10 rounded-md shrink-0" />
             <div className="space-y-2 flex-1">
               <PulseBlock className="h-4 w-1/3" />
               <PulseBlock className="h-3 w-2/3" />
@@ -122,10 +119,7 @@ export function LoadingSkeleton({
       aria-label="Loading content"
     >
       {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          className="rounded-xl border border-[#243249] bg-[#111B2D] p-5 space-y-4"
-        >
+        <div key={i} className="rounded-lg border border-border bg-card p-5 space-y-4">
           <PulseBlock className="h-5 w-1/2" />
           <PulseBlock className="h-20 w-full" />
           <div className="flex justify-between">
@@ -137,4 +131,3 @@ export function LoadingSkeleton({
     </div>
   );
 }
-

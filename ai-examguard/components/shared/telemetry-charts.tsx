@@ -55,12 +55,12 @@ function TelemetryTooltip({
   if (!active || !payload || payload.length === 0) return null;
 
   return (
-    <div className="rounded-lg border border-[#243249] bg-[#0B1220]/95 px-3 py-2 shadow-xl text-xs">
-      <p className="font-mono font-semibold text-[#F8FAFC] mb-1">{label}</p>
+    <div className="rounded-md border border-border bg-sidebar/95 px-3 py-2 text-xs">
+      <p className="font-mono font-semibold text-foreground mb-1">{label}</p>
       {payload.map((entry, idx) => (
-        <div key={idx} className="flex items-center justify-between gap-4 text-[#94A3B8]">
+        <div key={idx} className="flex items-center justify-between gap-4 text-muted-foreground">
           <span>{entry.name}:</span>
-          <span className="font-mono font-semibold text-[#38BDF8]">{entry.value}</span>
+          <span className="font-mono font-semibold text-primary tabular-reading">{entry.value}</span>
         </div>
       ))}
     </div>
@@ -82,7 +82,7 @@ export function ActivityAreaChart({
   const mounted = useIsClient();
 
   if (!mounted) {
-    return <div className="h-full w-full rounded-lg bg-[#17243A]/30 animate-pulse" />;
+    return <div className="h-full w-full rounded-md bg-surface-elevated/30 animate-pulse" />;
   }
 
   return (
@@ -154,7 +154,7 @@ export function DistributionBarChart({
   const mounted = useIsClient();
 
   if (!mounted) {
-    return <div className="h-full w-full rounded-lg bg-[#17243A]/30 animate-pulse" />;
+    return <div className="h-full w-full rounded-lg bg-surface-elevated/30 animate-pulse" />;
   }
 
   return (

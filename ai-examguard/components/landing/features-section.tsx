@@ -14,123 +14,132 @@ import { StatusBadge } from '@/components/shared/status-badge';
 
 const FEATURES = [
   {
+    code: '01',
     icon: Eye,
-    color: 'text-[#38BDF8] border-[#38BDF8]/30 bg-[#38BDF8]/10',
+    color: 'text-primary',
     title: 'In-Browser Face Presence & Multi-Face Detection',
     description:
-      'Powered by MediaPipe Tasks Vision WebAssembly running locally on the examinee device. Detects absent face and multiple faces without streaming raw camera video.',
+      'Runs MediaPipe Tasks Vision WebAssembly locally on the candidate device to detect absent or multiple faces without streaming raw camera video.',
   },
   {
+    code: '02',
     icon: Volume2,
-    color: 'text-[#2DD4BF] border-[#2DD4BF]/30 bg-[#2DD4BF]/10',
+    color: 'text-secondary',
     title: 'Acoustic Energy Profiling (Web Audio API)',
     description:
-      'Analyzes microphone decibel RMS spikes locally to detect sustained background noise or speech activity—explicitly distinguishing acoustic energy from speech recognition.',
+      'Measures microphone decibel RMS spikes locally to detect sustained noise or speech activity without audio recording or speech transcription.',
   },
   {
+    code: '03',
     icon: Monitor,
-    color: 'text-[#8B5CF6] border-[#8B5CF6]/30 bg-[#8B5CF6]/10',
+    color: 'text-purple',
     title: 'Browser Visibility & Fullscreen Telemetry',
     description:
-      'Tracks standard browser document visibility changes and fullscreen exits during active sessions, logging exact timestamps for invigilator context.',
+      'Records standard document visibility changes and fullscreen exits during active sessions with exact UTC timestamps for proctor review.',
   },
   {
+    code: '04',
     icon: Lock,
-    color: 'text-[#22C55E] border-[#22C55E]/30 bg-[#22C55E]/10',
+    color: 'text-success',
     title: 'Zero Answer-Key Leakage',
     description:
-      'Correct options and grading rubrics remain strictly server-side. Student question APIs exclude answer columns so DevTools inspection yields zero grading secrets.',
+      'Correct options and grading rubrics remain strictly inside protected server tables. Student endpoints strip answer keys from every payload.',
   },
   {
+    code: '05',
     icon: Activity,
-    color: 'text-[#F59E0B] border-[#F59E0B]/30 bg-[#F59E0B]/10',
+    color: 'text-warning',
     title: 'Explainable Risk Indicators',
     description:
-      'Every anomaly emits structured metadata (type, confidence, duration, server timestamp) rather than opaque black-box scores—never auto-disqualifying a student.',
+      'Every anomaly emits structured metadata (signal type, confidence, duration, timestamp) instead of opaque black-box verdicts.',
   },
   {
+    code: '06',
     icon: FileCheck2,
-    color: 'text-[#38BDF8] border-[#38BDF8]/30 bg-[#38BDF8]/10',
+    color: 'text-primary',
     title: 'Live Invigilator Review Workflow',
     description:
-      'Supabase Realtime streams prioritized risk events to human proctors who inspect event timelines, add review notes, and record formal determinations.',
+      'Supabase Realtime delivers prioritized risk alerts to human invigilators who inspect timelines, add notes, and log formal determinations.',
   },
 ];
 
 const CAPABILITY_BOUNDARIES = [
   {
-    capability: 'Single-face presence & absent-candidate detection',
+    capability: 'Single-face presence and absent-candidate detection',
     scope: 'In-Browser MVP (MediaPipe WASM)',
     supported: true,
-    detail: 'Executed locally in browser canvas memory; only event timestamps persist.',
+    detail: 'Executed locally in canvas memory; only event timestamps persist.',
   },
   {
     capability: 'Multiple-face detection in camera frame',
     scope: 'In-Browser MVP (MediaPipe WASM)',
     supported: true,
-    detail: 'Flags >1 face sustained past grace window as a human-review indicator.',
+    detail: 'Flags >1 face sustained past the grace window as a human-review signal.',
   },
   {
-    capability: 'Ambient acoustic spike & voice activity thresholding',
+    capability: 'Ambient acoustic spike and energy thresholding',
     scope: 'In-Browser MVP (Web Audio API)',
     supported: true,
-    detail: 'Measures RMS energy levels locally without recording or transcribing audio.',
+    detail: 'Measures RMS decibel levels locally without saving or transcribing audio.',
   },
   {
-    capability: 'Tab visibility & fullscreen state monitoring',
+    capability: 'Tab visibility and fullscreen state monitoring',
     scope: 'Standard Browser APIs',
     supported: true,
-    detail: 'Uses visibilitychange & fullscreenchange events where supported by browser.',
+    detail: 'Uses visibilitychange and fullscreenchange browser events.',
   },
   {
     capability: 'OS-level process killing or desktop window lockdown',
     scope: 'Future Native App Scope',
     supported: false,
-    detail: 'Web browsers cannot control external OS apps. Honest boundaries enforced.',
+    detail: 'Web browsers cannot control external OS apps. Documented explicitly.',
   },
 ];
 
 /**
- * Core platform feature grid combined with transparent AI & browser boundary matrix.
+ * Core platform feature specification ledger and transparent browser capability boundaries.
  */
 export function FeaturesSection() {
   return (
     <section
       id="capabilities"
-      className="border-b border-[#243249]/80 bg-[#080D18] py-20 px-4 sm:px-8"
+      className="border-b border-border bg-background py-16 sm:py-20 px-4 sm:px-8"
     >
-      <div className="mx-auto max-w-7xl space-y-16">
-        {/* Feature Cards */}
-        <div className="space-y-10">
-          <div className="max-w-3xl space-y-4">
-            <p className="text-xs font-mono uppercase tracking-widest text-[#2DD4BF]">
-              Platform Capabilities
+      <div className="mx-auto max-w-7xl space-y-14">
+        <div className="space-y-8">
+          <div className="max-w-2xl space-y-3">
+            <p className="text-xs font-medium text-secondary">
+              Platform capabilities
             </p>
-            <h2 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight text-[#F8FAFC]">
-              Precision Telemetry Without Surrendering Privacy
+            <h2 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+              Precision telemetry without surrendering privacy
             </h2>
-            <p className="text-base text-[#94A3B8] leading-relaxed">
-              Designed around transparent edge processing and rigorous server-side exam controls.
+            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+              Engineered around transparent edge processing and server-validated assessment controls.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* 3-column hairline ledger */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border border border-border rounded-lg overflow-hidden">
             {FEATURES.map((feat) => {
               const Icon = feat.icon;
               return (
                 <div
                   key={feat.title}
-                  className="rounded-xl border border-[#243249] bg-[#111B2D] p-6 space-y-4 hover:border-[#38BDF8]/40 transition-colors"
+                  className="bg-card p-6 space-y-3 hover:bg-surface-elevated transition-colors"
                 >
-                  <div
-                    className={`flex h-11 w-11 items-center justify-center rounded-lg border ${feat.color}`}
-                  >
-                    <Icon className="h-5 w-5" />
+                  <div className="flex items-center justify-between">
+                    <Icon className={`h-5 w-5 ${feat.color}`} />
+                    <span className="font-mono text-xs tabular-nums text-muted-foreground">
+                      {feat.code}
+                    </span>
                   </div>
-                  <h3 className="font-heading text-lg font-semibold text-[#F8FAFC]">
+                  <h3 className="font-heading text-base font-semibold text-foreground">
                     {feat.title}
                   </h3>
-                  <p className="text-sm text-[#94A3B8] leading-relaxed">{feat.description}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {feat.description}
+                  </p>
                 </div>
               );
             })}
@@ -138,41 +147,41 @@ export function FeaturesSection() {
         </div>
 
         {/* AI Monitoring Capabilities & Honest Technical Boundaries */}
-        <div className="rounded-2xl border border-[#243249] bg-[#0B1220] p-6 sm:p-8 space-y-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="space-y-2 max-w-2xl">
+        <div className="rounded-lg border border-border bg-sidebar overflow-hidden">
+          <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border bg-card px-6 py-5">
+            <div className="space-y-1.5 max-w-2xl">
               <div className="flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4 text-[#38BDF8]" />
-                <span className="text-xs font-mono uppercase tracking-widest text-[#38BDF8]">
-                  Transparent AI Capabilities
+                <ShieldAlert className="h-4 w-4 text-primary" />
+                <span className="text-xs font-medium text-primary">
+                  Transparent AI boundaries
                 </span>
               </div>
-              <h3 className="font-heading text-2xl font-bold text-[#F8FAFC]">
-                Real Browser Capabilities vs. Native Boundaries
+              <h3 className="font-heading text-xl font-bold text-foreground">
+                Real browser capabilities vs. native OS boundaries
               </h3>
-              <p className="text-sm text-[#94A3B8]">
+              <p className="text-sm text-muted-foreground">
                 AI ExamGuard never makes exaggerated claims or automatically convicts examinees.
-                Every automated signal is an explainable indicator queued for human judgment.
+                Every automated signal is an explainable indicator queued for human adjudication.
               </p>
             </div>
-            <StatusBadge tone="purple">Human-in-the-Loop Guarantee</StatusBadge>
+            <StatusBadge tone="warning">Human-in-the-loop required</StatusBadge>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-[#243249] text-[11px] font-mono uppercase tracking-wider text-[#94A3B8]">
-                  <th className="py-3 pr-4">Monitoring Signal</th>
-                  <th className="py-3 px-4">Execution Layer</th>
-                  <th className="py-3 px-4">Browser Availability</th>
-                  <th className="py-3 pl-4">Operational Guarantee</th>
+                <tr className="border-b border-border bg-background text-xs font-medium text-muted-foreground">
+                  <th className="py-3 px-6">Monitoring signal</th>
+                  <th className="py-3 px-4">Execution layer</th>
+                  <th className="py-3 px-4">Browser availability</th>
+                  <th className="py-3 px-6">Operational guarantee</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#243249]/70 text-sm">
+              <tbody className="divide-y divide-border text-sm">
                 {CAPABILITY_BOUNDARIES.map((row) => (
-                  <tr key={row.capability} className="hover:bg-[#111B2D]/60 transition-colors">
-                    <td className="py-3.5 pr-4 font-medium text-[#F8FAFC]">{row.capability}</td>
-                    <td className="py-3.5 px-4 font-mono text-xs text-[#94A3B8]">{row.scope}</td>
+                  <tr key={row.capability} className="hover:bg-card transition-colors">
+                    <td className="py-3.5 px-6 font-medium text-foreground">{row.capability}</td>
+                    <td className="py-3.5 px-4 font-mono text-xs text-muted-foreground">{row.scope}</td>
                     <td className="py-3.5 px-4">
                       {row.supported ? (
                         <StatusBadge tone="success" icon={<CheckCircle2 className="h-3 w-3" />}>
@@ -180,13 +189,11 @@ export function FeaturesSection() {
                         </StatusBadge>
                       ) : (
                         <StatusBadge tone="neutral" icon={<XCircle className="h-3 w-3" />}>
-                          Future Native App
+                          Out of web scope
                         </StatusBadge>
                       )}
                     </td>
-                    <td className="py-3.5 pl-4 text-xs sm:text-sm text-[#94A3B8]">
-                      {row.detail}
-                    </td>
+                    <td className="py-3.5 px-6 text-xs text-muted-foreground">{row.detail}</td>
                   </tr>
                 ))}
               </tbody>
@@ -197,4 +204,3 @@ export function FeaturesSection() {
     </section>
   );
 }
-

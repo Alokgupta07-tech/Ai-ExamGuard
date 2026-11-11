@@ -9,7 +9,7 @@ import { CtaFooterSection } from '@/components/landing/cta-footer';
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-[#080D18] text-[#F8FAFC] flex flex-col selection:bg-[#38BDF8]/20 selection:text-[#38BDF8]">
+    <div className="min-h-screen bg-background text-foreground flex flex-col selection:bg-primary/20 selection:text-primary">
       <LandingNav />
       <main className="flex-1">
         <HeroSection />

@@ -4,92 +4,79 @@ import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 /**
- * Closing call-to-action banner and institutional footer.
+ * Closing call-to-action band and clean institutional footer.
  */
 export function CtaFooterSection() {
   return (
     <>
-      {/* CTA Section */}
-      <section className="relative overflow-hidden bg-[#080D18] py-20 px-4 sm:px-8">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-72 w-[640px] rounded-full bg-[#38BDF8]/10 blur-[130px]" />
-        </div>
-
-        <div className="relative z-10 mx-auto max-w-4xl text-center space-y-6">
-          <p className="text-xs font-mono uppercase tracking-widest text-[#38BDF8]">
-            Ready for Deployment
+      <section className="bg-background py-16 sm:py-20 px-4 sm:px-8">
+        <div className="mx-auto max-w-4xl text-center space-y-5">
+          <p className="text-xs font-medium text-primary">
+            Ready for institutional deployment
           </p>
-          <h2 className="font-heading text-3xl sm:text-5xl font-bold tracking-tight text-[#F8FAFC]">
-            Protect Academic Integrity Without Sacrificing Student Trust.
+          <h2 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+            Protect academic integrity without sacrificing student trust
           </h2>
-          <p className="text-base text-[#94A3B8] max-w-2xl mx-auto">
+          <p className="text-base text-muted-foreground max-w-2xl mx-auto">
             Create an institutional workspace or sign in to explore the Administrator, Faculty,
             Invigilator, and Student portals.
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
-            <Button
-              asChild
-              size="lg"
-              className="bg-[#38BDF8] text-[#080D18] font-semibold shadow-xl shadow-[#38BDF8]/25 hover:bg-[#38BDF8]/90 px-8"
-            >
+          <div className="flex flex-wrap items-center justify-center gap-3.5 pt-2">
+            <Button asChild size="lg">
               <Link href="/signup" className="flex items-center gap-2">
-                <span>Provision University Account</span>
+                <span>Provision university account</span>
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="border-[#243249] bg-[#111B2D] text-[#F8FAFC] hover:bg-[#17243A] px-8"
-            >
-              <Link href="/login">Sign In to Portal</Link>
+            <Button asChild size="lg" variant="outline">
+              <Link href="/login">Sign in to portal</Link>
             </Button>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-[#243249] bg-[#0B1220] py-10 px-4 sm:px-8">
+      <footer className="border-t border-border bg-sidebar py-8 px-4 sm:px-8">
         <div className="mx-auto max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#38BDF8]/40 bg-[#38BDF8]/10">
-              <ShieldCheck className="h-4 w-4 text-[#38BDF8]" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-md border border-primary/35 bg-primary/10">
+              <ShieldCheck className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <span className="font-heading text-sm font-bold text-[#F8FAFC]">
-                AI <span className="text-[#38BDF8]">ExamGuard</span>
+              <span className="font-heading text-sm font-bold text-foreground">
+                AI <span className="text-primary">ExamGuard</span>
               </span>
-              <p className="text-[11px] text-[#94A3B8]">
-                University-Grade Online Examination Integrity Platform
+              <p className="text-xs text-muted-foreground">
+                University online examination integrity platform
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-[#94A3B8]">
-            <a href="#overview" className="hover:text-[#F8FAFC] transition-colors">
+          <nav className="flex flex-wrap items-center justify-center gap-6 text-xs text-muted-foreground" aria-label="Footer navigation">
+            <a href="#overview" className="hover:text-foreground transition-colors">
               Platform
             </a>
-            <a href="#capabilities" className="hover:text-[#F8FAFC] transition-colors">
-              AI Capabilities
+            <a href="#capabilities" className="hover:text-foreground transition-colors">
+              Capabilities
             </a>
-            <a href="#security" className="hover:text-[#F8FAFC] transition-colors">
-              Security
+            <a href="#workflow" className="hover:text-foreground transition-colors">
+              Workflow
             </a>
-            <a href="#privacy" className="hover:text-[#F8FAFC] transition-colors">
+            <a href="#security" className="hover:text-foreground transition-colors">
+              Architecture
+            </a>
+            <a href="#privacy" className="hover:text-foreground transition-colors">
               Privacy
             </a>
-            <Link href="/login" className="hover:text-[#38BDF8] transition-colors">
-              Sign In
+            <Link href="/login" className="hover:text-primary transition-colors">
+              Sign in
             </Link>
-          </div>
+          </nav>
 
-          <p className="text-xs font-mono text-[#94A3B8]">
-            © 2026 AI ExamGuard. All rights reserved.
+          <p className="text-xs text-muted-foreground">
+            AI ExamGuard · Academic Integrity Platform
           </p>
         </div>
       </footer>
     </>
   );
 }
-

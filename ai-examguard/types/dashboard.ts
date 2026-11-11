@@ -38,11 +38,16 @@ export interface ExamView {
   tenantId: string;
   title: string;
   description: string | null;
+  instructions: string | null;
   durationMinutes: number;
   startTime: string;
   endTime: string;
   status: ExamStatus;
   totalPoints: number;
+  passingMarks: number;
+  negativeMarking: number;
+  shuffleQuestions: boolean;
+  shuffleOptions: boolean;
   questionCount: number;
   sessionCount: number;
   settings: Record<string, unknown>;
@@ -59,6 +64,8 @@ export interface QuestionView {
   type: QuestionType;
   prompt: string;
   points: number;
+  category: string | null;
+  difficulty: 'easy' | 'medium' | 'hard';
   createdAt: string;
 }
 

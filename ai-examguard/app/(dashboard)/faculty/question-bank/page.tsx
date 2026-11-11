@@ -1,6 +1,5 @@
-import { FacultyWorkspace } from '@/components/dashboards/faculty/faculty-workspace';
+import { QuestionBankManager } from '@/components/dashboards/faculty/question-bank-manager';
 
 export default function FacultyQuestionBankPage() {
-  return <FacultyWorkspace section="question-bank" />;
+  return <QuestionBankManager />;
 }
-

@@ -1,6 +1,5 @@
-import { FacultyWorkspace } from '@/components/dashboards/faculty/faculty-workspace';
+import { ExamWizardShell } from '@/components/dashboards/faculty/exam-wizard/exam-wizard-shell';
 
 export default function FacultyCreateExamPage() {
-  return <FacultyWorkspace section="create-exam" />;
+  return <ExamWizardShell />;
 }
-

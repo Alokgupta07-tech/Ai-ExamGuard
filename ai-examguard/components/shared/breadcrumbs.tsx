@@ -26,7 +26,7 @@ export function Breadcrumbs({ items, homeHref = '/', className }: BreadcrumbsPro
         <li>
           <Link
             href={homeHref}
-            className="text-[#94A3B8] hover:text-[#38BDF8] transition-colors flex items-center"
+            className="text-muted-foreground hover:text-primary transition-colors flex items-center"
             aria-label="Home"
           >
             <Home className="h-3.5 w-3.5" />
@@ -37,14 +37,14 @@ export function Breadcrumbs({ items, homeHref = '/', className }: BreadcrumbsPro
           const isLast = idx === items.length - 1;
           return (
             <React.Fragment key={`${item.label}-${idx}`}>
-              <li aria-hidden="true" className="text-[#243249]">
-                <ChevronRight className="h-3.5 w-3.5 text-[#94A3B8]/60" />
+              <li aria-hidden="true" className="text-border">
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
               </li>
               <li>
                 {item.href && !isLast ? (
                   <Link
                     href={item.href}
-                    className="text-[#94A3B8] hover:text-[#F8FAFC] transition-colors font-medium"
+                    className="text-muted-foreground hover:text-foreground transition-colors font-medium"
                   >
                     {item.label}
                   </Link>
@@ -52,7 +52,7 @@ export function Breadcrumbs({ items, homeHref = '/', className }: BreadcrumbsPro
                   <span
                     className={cn(
                       'font-medium',
-                      isLast ? 'text-[#F8FAFC]' : 'text-[#94A3B8]'
+                      isLast ? 'text-foreground' : 'text-muted-foreground'
                     )}
                     aria-current={isLast ? 'page' : undefined}
                   >

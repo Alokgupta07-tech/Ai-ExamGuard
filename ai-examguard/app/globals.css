@@ -1,4 +1,8 @@
+/* Hallmark · built: Hallmark · genre: modern-minimal · theme: Console (by request) · posture: restrained · shape: console · hero: Stage (/), Settled (/login) · nav: edge-aligned · footer: colophon · redesign: full · copy: verbatim · v2.0.0 */
+/* Hallmark · pre-emit critique: P5 H5 E5 S5 R4 V5 · weakest: R, cut landing glows, traffic-light window bars, and card-on-card chrome in favor of 1px hairline instrument panels */
+/* Hallmark · waive 47b · one Stage telemetry instrument frame on hero right, real interactive session controls inside · telemetry console is the product being sold */
 @import "tailwindcss";
+@import "./tokens.css";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -27,11 +31,13 @@
   --color-critical: var(--critical);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-ink-secondary: var(--ink-secondary);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-input: var(--input);
   --color-ring: var(--ring);
 
@@ -57,95 +63,93 @@
   --radius-2xl: calc(var(--radius) * 1.8);
 }
 
-:root,
-.dark {
-  --background: #080D18;
-  --foreground: #F8FAFC;
-  --card: #111B2D;
-  --card-foreground: #F8FAFC;
-  --popover: #111B2D;
-  --popover-foreground: #F8FAFC;
-  --surface-elevated: #17243A;
-
-  --primary: #38BDF8;
-  --primary-foreground: #080D18;
-  --secondary: #2DD4BF;
-  --secondary-foreground: #080D18;
-  --purple: #8B5CF6;
-  --success: #22C55E;
-  --warning: #F59E0B;
-  --critical: #EF4444;
-
-  --muted: #17243A;
-  --muted-foreground: #94A3B8;
-  --accent: #17243A;
-  --accent-foreground: #F8FAFC;
-
-  --destructive: #EF4444;
-  --destructive-foreground: #F8FAFC;
-
-  --border: #243249;
-  --input: #243249;
-  --ring: #38BDF8;
-
-  --sidebar: #0B1220;
-  --sidebar-foreground: #F8FAFC;
-  --sidebar-primary: #38BDF8;
-  --sidebar-primary-foreground: #080D18;
-  --sidebar-accent: #17243A;
-  --sidebar-accent-foreground: #38BDF8;
-  --sidebar-border: #243249;
-  --sidebar-ring: #38BDF8;
-
-  --chart-1: #38BDF8;
-  --chart-2: #2DD4BF;
-  --chart-3: #8B5CF6;
-  --chart-4: #F59E0B;
-  --chart-5: #EF4444;
-
-  --radius: 0.625rem;
-}
-
 @layer base {
   * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
-  }
-  html {
-    @apply font-sans scroll-smooth;
-    color-scheme: dark;
+    @apply border-border;
   }
 
-  /* Custom subtle dark scrollbar */
+  html {
+    font-family: var(--font-sans);
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+    overflow-x: clip;
+    color-scheme: dark;
+    scrollbar-color: var(--border) var(--background);
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    overflow-x: clip;
+    caret-color: var(--primary);
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+    overflow-wrap: break-word;
+    min-width: 0;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 26%, transparent);
+    color: var(--foreground);
+  }
+
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  :where(input, select, textarea):focus-visible {
+    outline-offset: -2px;
+  }
+
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
+
   ::-webkit-scrollbar-track {
-    background: #080D18;
+    background: var(--background);
   }
+
   ::-webkit-scrollbar-thumb {
-    background: #243249;
+    background: var(--border);
     border-radius: 9999px;
   }
+
   ::-webkit-scrollbar-thumb:hover {
-    background: #38BDF8;
+    background: var(--primary);
   }
 }
 
-.bg-cyber-grid {
-  background-image:
-    linear-gradient(to right, rgba(36, 50, 73, 0.28) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(36, 50, 73, 0.28) 1px, transparent 1px);
-  background-size: 48px 48px;
+.hairline-grid {
+  display: grid;
+  gap: 1px;
+  background-color: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.hairline-grid > * {
+  background-color: var(--card);
+}
+
+.tabular-reading {
+  font-variant-numeric: tabular-nums;
 }
 
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
+
   *,
   *::before,
   *::after {

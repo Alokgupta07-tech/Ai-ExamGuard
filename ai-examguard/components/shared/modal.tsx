@@ -65,7 +65,7 @@ export function Modal({
             exit={{ opacity: 0 }}
             transition={{ duration: prefersReducedMotion ? 0 : 0.18 }}
             onClick={onClose}
-            className="fixed inset-0 bg-[#080D18]/80 backdrop-blur-sm"
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm"
           />
 
           {/* Panel */}
@@ -75,29 +75,29 @@ export function Modal({
             exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 8 }}
             transition={{ duration: prefersReducedMotion ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
             className={cn(
-              'relative z-10 w-full rounded-xl border border-[#243249] bg-[#111B2D] shadow-2xl shadow-black/60 flex flex-col max-h-[90vh]',
+              'relative z-10 w-full rounded-lg border border-border bg-card flex flex-col max-h-[90vh]',
               SIZE_CLASSES[size],
               className
             )}
           >
             {/* Header */}
-            <div className="flex items-start justify-between gap-4 border-b border-[#243249] px-6 py-4">
+            <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
               <div className="space-y-1 min-w-0">
                 <h2
                   id="modal-title"
-                  className="font-heading text-lg font-semibold text-[#F8FAFC] leading-tight"
+                  className="font-heading text-lg font-semibold text-foreground leading-tight"
                 >
                   {title}
                 </h2>
                 {description && (
-                  <p className="text-xs sm:text-sm text-[#94A3B8]">{description}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{description}</p>
                 )}
               </div>
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="Close modal"
-                className="rounded-lg p-1.5 text-[#94A3B8] hover:bg-[#17243A] hover:text-[#F8FAFC] transition-colors shrink-0 cursor-pointer"
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-surface-elevated hover:text-foreground transition-colors shrink-0 cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -108,7 +108,7 @@ export function Modal({
 
             {/* Footer */}
             {footer && (
-              <div className="border-t border-[#243249] bg-[#0B1220]/50 px-6 py-4 flex items-center justify-end gap-3 rounded-b-xl">
+              <div className="border-t border-border bg-sidebar/60 px-6 py-4 flex items-center justify-end gap-3 rounded-b-lg">
                 {footer}
               </div>
             )}

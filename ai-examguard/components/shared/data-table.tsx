@@ -95,12 +95,12 @@ export function DataTable<T>({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {searchable ? (
             <div className="relative w-full sm:max-w-xs">
-              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8]" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={searchPlaceholder}
-                className="pl-9 bg-[#0B1220] border-[#243249] text-[#F8FAFC] placeholder:text-[#94A3B8]/60"
+                className="pl-9 bg-sidebar border-border text-foreground placeholder:text-muted-foreground/60"
               />
             </div>
           ) : (
@@ -116,27 +116,27 @@ export function DataTable<T>({
       {processedData.length === 0 ? (
         <EmptyState title={emptyTitle} description={emptyDescription} />
       ) : (
-        <div className="rounded-xl border border-[#243249] bg-[#111B2D] overflow-hidden shadow-lg">
+        <div className="rounded-lg border border-border bg-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-[#243249] bg-[#17243A]/60 text-[11px] font-mono uppercase tracking-wider text-[#94A3B8]">
+                <tr className="border-b border-border bg-surface-elevated/60 text-xs font-medium text-muted-foreground">
                   {columns.map((col) => {
                     const isSorted = sortKey === col.key;
                     return (
-                      <th key={col.key} className={cn('px-4 py-3 font-semibold', col.className)}>
+                      <th key={col.key} className={cn('px-4 py-3 font-semibold whitespace-nowrap', col.className)}>
                         {col.sortable ? (
                           <button
                             type="button"
                             onClick={() => handleToggleSort(col)}
-                            className="inline-flex items-center gap-1.5 hover:text-[#F8FAFC] transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
                           >
                             <span>{col.header}</span>
                             {isSorted ? (
                               sortDir === 'asc' ? (
-                                <ArrowUp className="h-3 w-3 text-[#38BDF8]" />
+                                <ArrowUp className="h-3 w-3 text-primary" />
                               ) : (
-                                <ArrowDown className="h-3 w-3 text-[#38BDF8]" />
+                                <ArrowDown className="h-3 w-3 text-primary" />
                               )
                             ) : (
                               <ArrowUpDown className="h-3 w-3 opacity-50" />
@@ -150,13 +150,13 @@ export function DataTable<T>({
                   })}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#243249]/70 text-sm">
+              <tbody className="divide-y divide-border/70 text-sm">
                 {processedData.map((row) => (
                   <tr
                     key={getRowKey(row)}
                     onClick={() => onRowClick?.(row)}
                     className={cn(
-                      'transition-colors hover:bg-[#17243A]/45',
+                      'transition-colors hover:bg-surface-elevated/45',
                       onRowClick && 'cursor-pointer'
                     )}
                   >

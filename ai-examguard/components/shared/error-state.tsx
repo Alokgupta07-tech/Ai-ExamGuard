@@ -27,21 +27,21 @@ export function ErrorState({
     <div
       role="alert"
       className={cn(
-        'flex flex-col items-center justify-center text-center rounded-xl border border-[#EF4444]/30 bg-[#EF4444]/5 px-6 py-10',
+        'flex flex-col items-center justify-center text-center rounded-lg border border-critical/35 bg-critical/5 px-6 py-10',
         className
       )}
     >
-      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl border border-[#EF4444]/30 bg-[#EF4444]/10 text-[#EF4444]">
+      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-md border border-critical/35 bg-critical/10 text-critical">
         <AlertTriangle className="h-5 w-5" />
       </div>
-      <h3 className="font-heading text-base font-semibold text-[#F8FAFC]">{title}</h3>
-      <p className="mt-1.5 text-sm text-[#94A3B8] max-w-md">{message}</p>
+      <h3 className="font-heading text-base font-semibold text-foreground">{title}</h3>
+      <p className="mt-1.5 text-sm text-muted-foreground max-w-md">{message}</p>
       {onRetry && (
         <Button
           variant="outline"
           size="sm"
           onClick={onRetry}
-          className="mt-4 border-[#EF4444]/40 text-[#F8FAFC] hover:bg-[#EF4444]/10"
+          className="mt-4 border-critical/40 text-foreground hover:bg-critical/10"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           <span>{retryLabel}</span>

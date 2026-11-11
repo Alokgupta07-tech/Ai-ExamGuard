@@ -75,7 +75,10 @@ export function AppSidebar({
 
   const isItemActive = (href: string) => {
     const [basePath, queryString] = href.split('?');
-    if (pathname !== basePath) {
+    if (pathname !== basePath && !pathname.startsWith(`${basePath}/`)) {
+      return false;
+    }
+    if (basePath === '/faculty/exams' && pathname === '/faculty/exams/new') {
       return false;
     }
     if (!queryString) {
@@ -90,25 +93,25 @@ export function AppSidebar({
     let lastSection: string | undefined;
 
     return (
-      <div className="flex h-full flex-col justify-between bg-[#0B1220] text-[#F8FAFC]">
+      <div className="flex h-full flex-col justify-between bg-sidebar text-foreground">
         <div className="flex flex-col min-h-0 flex-1">
           {/* Brand Row */}
           <div
             className={cn(
-              'h-16 shrink-0 border-b border-[#243249] flex items-center justify-between px-4',
+              'h-16 shrink-0 border-b border-border flex items-center justify-between px-4',
               isCollapsed && 'justify-center px-2'
             )}
           >
-            <Link href="/" className="flex items-center gap-2.5 min-w-0">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#38BDF8]/40 bg-[#38BDF8]/10 shadow-[0_0_16px_rgba(56,189,248,0.18)]">
-                <ShieldCheck className="h-5 w-5 text-[#38BDF8]" />
+            <Link href="/" aria-label="AI ExamGuard home" className="flex items-center gap-2.5 min-w-0">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-primary/40 bg-primary/10">
+                <ShieldCheck className="h-5 w-5 text-primary" />
               </div>
               {!isCollapsed && (
                 <div className="min-w-0">
-                  <span className="font-heading font-bold text-base tracking-tight text-[#F8FAFC] block truncate">
-                    AI <span className="text-[#38BDF8]">ExamGuard</span>
+                  <span className="font-heading font-bold text-base tracking-tight text-foreground block truncate">
+                    AI ExamGuard
                   </span>
-                  <p className="text-[10px] text-[#94A3B8] font-mono">v1.0 • Enterprise</p>
+                  <p className="text-xs text-muted-foreground">Institutional console</p>
                 </div>
               )}
             </Link>
@@ -118,7 +121,7 @@ export function AppSidebar({
                 type="button"
                 onClick={onCloseMobile}
                 aria-label="Close navigation menu"
-                className="rounded-lg p-1.5 text-[#94A3B8] hover:bg-[#17243A] hover:text-[#F8FAFC] cursor-pointer"
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-surface-elevated hover:text-foreground cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -127,10 +130,7 @@ export function AppSidebar({
                 type="button"
                 onClick={onToggleCollapse}
                 aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                className={cn(
-                  'hidden lg:flex h-7 w-7 items-center justify-center rounded-md border border-[#243249] bg-[#111B2D] text-[#94A3B8] hover:border-[#38BDF8]/40 hover:text-[#F8FAFC] transition-colors cursor-pointer',
-                  isCollapsed && 'ml-0'
-                )}
+                className="hidden lg:flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors cursor-pointer"
               >
                 {isCollapsed ? (
                   <ChevronRight className="h-3.5 w-3.5" />
@@ -144,15 +144,15 @@ export function AppSidebar({
           {/* University Tenant Indicator */}
           <div
             className={cn(
-              'shrink-0 border-b border-[#243249]/70 bg-[#17243A]/30 px-4 py-3',
+              'shrink-0 border-b border-border/80 bg-surface-elevated/35 px-4 py-3',
               isCollapsed && 'px-2 flex justify-center'
             )}
             title={tenantName}
           >
-            <div className="flex items-center gap-2 text-xs text-[#94A3B8] min-w-0">
-              <Building2 className="h-3.5 w-3.5 shrink-0 text-[#38BDF8]" />
+            <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+              <Building2 className="h-3.5 w-3.5 shrink-0 text-primary" />
               {!isCollapsed && (
-                <span className="font-medium text-[#F8FAFC] truncate">{tenantName}</span>
+                <span className="font-medium text-foreground truncate">{tenantName}</span>
               )}
             </div>
           </div>
@@ -172,7 +172,7 @@ export function AppSidebar({
               return (
                 <React.Fragment key={item.href}>
                   {showSectionHeader && (
-                    <div className="px-3 pt-3 pb-1 text-[10px] font-mono uppercase tracking-widest text-[#94A3B8]/70">
+                    <div className="px-3 pt-3.5 pb-1 text-xs font-medium text-muted-foreground">
                       {item.section}
                     </div>
                   )}
@@ -181,23 +181,23 @@ export function AppSidebar({
                     onClick={isMobile ? onCloseMobile : undefined}
                     title={isCollapsed ? item.label : undefined}
                     className={cn(
-                      'relative flex items-center gap-3 rounded-lg px-3 py-2 text-xs sm:text-sm font-medium transition-colors',
+                      'relative flex items-center gap-3 rounded-md px-3 py-2 text-xs sm:text-sm font-medium transition-colors',
                       isCollapsed && 'justify-center px-2 py-2.5',
                       active
-                        ? 'text-[#38BDF8] bg-[#38BDF8]/12 border border-[#38BDF8]/30'
-                        : 'text-[#94A3B8] border border-transparent hover:bg-[#17243A]/60 hover:text-[#F8FAFC]'
+                        ? 'text-primary bg-primary/12 border border-primary/30'
+                        : 'text-muted-foreground border border-transparent hover:bg-surface-elevated/60 hover:text-foreground'
                     )}
                   >
                     {active && !isCollapsed && (
                       <span
                         aria-hidden="true"
-                        className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-[#38BDF8]"
+                        className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-primary"
                       />
                     )}
                     <Icon
                       className={cn(
                         'h-4 w-4 shrink-0',
-                        active ? 'text-[#38BDF8]' : 'text-[#94A3B8]'
+                        active ? 'text-primary' : 'text-muted-foreground'
                       )}
                     />
                     {!isCollapsed && <span className="truncate">{item.label}</span>}
@@ -209,16 +209,16 @@ export function AppSidebar({
         </div>
 
         {/* Footer Profile & Logout */}
-        <div className="shrink-0 p-3 border-t border-[#243249] bg-[#111B2D]/40 space-y-3">
+        <div className="shrink-0 p-3 border-t border-border bg-card/50 space-y-3">
           {!isCollapsed && (
             <div className="flex items-center justify-between gap-2 px-1">
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-[#F8FAFC] truncate">
-                  {userName || 'Loading...'}
+                <p className="text-xs font-semibold text-foreground truncate">
+                  {userName || 'Loading…'}
                 </p>
-                <p className="text-[11px] text-[#94A3B8] truncate">{userEmail}</p>
+                <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
               </div>
-              <StatusBadge tone={ROLE_BADGE_TONE[resolvedRole]} className="text-[10px]">
+              <StatusBadge tone={ROLE_BADGE_TONE[resolvedRole]}>
                 {ROLE_DISPLAY[resolvedRole]}
               </StatusBadge>
             </div>
@@ -229,12 +229,12 @@ export function AppSidebar({
             onClick={onSignOut}
             title="Sign Out"
             className={cn(
-              'w-full flex items-center justify-center gap-2 rounded-lg border border-[#243249] bg-[#111B2D] px-3 py-2 text-xs font-medium text-[#94A3B8] hover:border-[#EF4444]/40 hover:bg-[#EF4444]/10 hover:text-[#EF4444] transition-colors cursor-pointer',
+              'w-full flex items-center justify-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:border-critical/40 hover:bg-critical/10 hover:text-critical transition-colors cursor-pointer',
               isCollapsed && 'px-2'
             )}
           >
             <LogOut className="h-3.5 w-3.5 shrink-0" />
-            {!isCollapsed && <span>Sign Out</span>}
+            {!isCollapsed && <span>Sign out</span>}
           </button>
         </div>
       </div>
@@ -243,17 +243,15 @@ export function AppSidebar({
 
   return (
     <>
-      {/* Desktop Collapsible Sidebar */}
       <aside
         className={cn(
-          'hidden lg:flex flex-col shrink-0 border-r border-[#243249] bg-[#0B1220] transition-[width] duration-200 sticky top-0 h-screen',
+          'hidden lg:flex flex-col shrink-0 border-r border-border bg-sidebar sticky top-0 h-screen',
           collapsed ? 'w-[72px]' : 'w-64'
         )}
       >
         {renderSidebarBody(false)}
       </aside>
 
-      {/* Mobile Slide-Out Sidebar Drawer */}
       <AnimatePresence>
         {mobileOpen && (
           <div className="fixed inset-0 z-50 flex lg:hidden">
@@ -263,14 +261,14 @@ export function AppSidebar({
               exit={{ opacity: 0 }}
               transition={{ duration: prefersReducedMotion ? 0 : 0.18 }}
               onClick={onCloseMobile}
-              className="fixed inset-0 bg-[#080D18]/80 backdrop-blur-xs"
+              className="fixed inset-0 bg-background/80 backdrop-blur-xs"
             />
             <motion.aside
               initial={prefersReducedMotion ? false : { x: '-100%' }}
               animate={{ x: 0 }}
               exit={prefersReducedMotion ? { opacity: 0 } : { x: '-100%' }}
               transition={{ duration: prefersReducedMotion ? 0 : 0.24, ease: [0.16, 1, 0.3, 1] }}
-              className="relative z-10 w-72 max-w-[85vw] h-full border-r border-[#243249] shadow-2xl"
+              className="relative z-10 w-72 max-w-[85vw] h-full border-r border-border"
             >
               {renderSidebarBody(true)}
             </motion.aside>

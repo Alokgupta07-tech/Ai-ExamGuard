@@ -140,8 +140,12 @@ async function fetchTenantAcademicData(tenantId: string, courseFilterIds?: strin
     .eq('tenant_id', tenantId)
     .order('created_at', { ascending: false });
 
-  if (courseFilterIds && courseFilterIds.length > 0) {
-    coursesQuery = coursesQuery.in('id', courseFilterIds);
+  if (courseFilterIds) {
+    if (courseFilterIds.length === 0) {
+      coursesQuery = coursesQuery.in('id', ['00000000-0000-0000-0000-000000000000']);
+    } else {
+      coursesQuery = coursesQuery.in('id', courseFilterIds);
+    }
   }
 
   const { data: rawCourses } = await coursesQuery;
@@ -161,7 +165,7 @@ async function fetchTenantAcademicData(tenantId: string, courseFilterIds?: strin
   let examsQuery = supabaseAdmin
     .from('exams')
     .select(
-      'id, course_id, tenant_id, title, description, duration_minutes, start_time, end_time, status, total_points, settings, created_by, created_at'
+      'id, course_id, tenant_id, title, description, instructions, duration_minutes, start_time, end_time, status, total_points, passing_marks, negative_marking, shuffle_questions, shuffle_options, settings, created_by, created_at'
     )
     .eq('tenant_id', tenantId)
     .order('start_time', { ascending: false });
@@ -190,11 +194,16 @@ async function fetchTenantAcademicData(tenantId: string, courseFilterIds?: strin
     tenant_id: string;
     title: string;
     description: string | null;
+    instructions: string | null;
     duration_minutes: number;
     start_time: string;
     end_time: string;
     status: ExamStatus;
     total_points: number;
+    passing_marks: number;
+    negative_marking: number;
+    shuffle_questions: boolean;
+    shuffle_options: boolean;
     settings: Record<string, unknown>;
     created_by: string;
     created_at: string;
@@ -212,7 +221,7 @@ async function fetchTenantAcademicData(tenantId: string, courseFilterIds?: strin
     examIds.length > 0
       ? supabaseAdmin
           .from('questions')
-          .select('id, exam_id, order_index, type, prompt, points, created_at')
+          .select('id, exam_id, order_index, type, prompt, points, category, difficulty, created_at')
           .in('exam_id', examIds)
           .order('order_index', { ascending: true })
       : Promise.resolve({ data: [] }),
@@ -234,6 +243,8 @@ async function fetchTenantAcademicData(tenantId: string, courseFilterIds?: strin
     type: QuestionType;
     prompt: string;
     points: number;
+    category: string | null;
+    difficulty: 'easy' | 'medium' | 'hard';
     created_at: string;
   }[];
 
@@ -343,11 +354,16 @@ async function fetchTenantAcademicData(tenantId: string, courseFilterIds?: strin
       tenantId: e.tenant_id,
       title: e.title,
       description: e.description,
+      instructions: e.instructions ?? null,
       durationMinutes: e.duration_minutes,
       startTime: e.start_time,
       endTime: e.end_time,
       status: e.status,
       totalPoints: e.total_points,
+      passingMarks: e.passing_marks ?? 0,
+      negativeMarking: Number(e.negative_marking ?? 0),
+      shuffleQuestions: Boolean(e.shuffle_questions),
+      shuffleOptions: Boolean(e.shuffle_options),
       questionCount: questionCountByExam.get(e.id) || 0,
       sessionCount: sessionCountByExam.get(e.id) || 0,
       settings: e.settings || {},
@@ -368,6 +384,8 @@ async function fetchTenantAcademicData(tenantId: string, courseFilterIds?: strin
       type: q.type,
       prompt: q.prompt,
       points: q.points,
+      category: q.category ?? null,
+      difficulty: q.difficulty || 'medium',
       createdAt: q.created_at,
     };
   });
@@ -641,10 +659,37 @@ export class DashboardService {
 
     const academic = await fetchTenantAcademicData(actor.tenantId, enrolledCourseIds);
 
-    // Filter STRICTLY to published/active/completed exams and THIS student's sessions only
-    const studentVisibleExams = academic.exams.filter(
-      (e) => e.status === 'published' || e.status === 'active' || e.status === 'completed'
-    );
+    const candidateExamIds = academic.exams.map((e) => e.id);
+    const { data: rawAssignments, error: assignErr } =
+      candidateExamIds.length > 0
+        ? await supabaseAdmin
+            .from('exam_assignments')
+            .select('exam_id, student_id')
+            .in('exam_id', candidateExamIds)
+        : { data: [], error: null };
+
+    if (assignErr) {
+      throw new Error(`Failed to verify student exam assignments: ${assignErr.message}`);
+    }
+
+    const assignedStudentsByExam = new Map<string, Set<string>>();
+    for (const row of (rawAssignments || []) as { exam_id: string; student_id: string }[]) {
+      const set = assignedStudentsByExam.get(row.exam_id) || new Set<string>();
+      set.add(row.student_id);
+      assignedStudentsByExam.set(row.exam_id, set);
+    }
+
+    // Filter STRICTLY to published/active/completed exams assigned to THIS student
+    const studentVisibleExams = academic.exams.filter((e) => {
+      if (e.status !== 'published' && e.status !== 'active' && e.status !== 'completed') {
+        return false;
+      }
+      const explicitRoster = assignedStudentsByExam.get(e.id);
+      if (explicitRoster && explicitRoster.size > 0) {
+        return explicitRoster.has(actor.userId);
+      }
+      return true;
+    });
     const mySessions = academic.sessions.filter((s) => s.studentId === actor.userId);
 
     const completedSessions = mySessions.filter(

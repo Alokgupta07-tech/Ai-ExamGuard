@@ -22,8 +22,8 @@ export function AppShell({ children }: AppShellProps) {
   const userEmail = user?.email || '';
 
   return (
-    <div className="flex min-h-screen bg-[#080D18] text-[#F8FAFC]">
-      <Suspense fallback={<div className="hidden lg:block w-64 border-r border-[#243249] bg-[#0B1220]" />}>
+    <div className="flex min-h-screen bg-background text-foreground">
+      <Suspense fallback={<div className="hidden lg:block w-64 border-r border-border bg-sidebar" />}>
         <AppSidebar
           role={role}
           tenantName={tenantName}

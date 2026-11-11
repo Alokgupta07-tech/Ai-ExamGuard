@@ -25,18 +25,18 @@ export interface StatCardProps {
 }
 
 const ACCENT_ICON_STYLES: Record<StatAccent, string> = {
-  cyan: 'border-[#38BDF8]/30 bg-[#38BDF8]/10 text-[#38BDF8]',
-  teal: 'border-[#2DD4BF]/30 bg-[#2DD4BF]/10 text-[#2DD4BF]',
-  purple: 'border-[#8B5CF6]/30 bg-[#8B5CF6]/10 text-[#8B5CF6]',
-  success: 'border-[#22C55E]/30 bg-[#22C55E]/10 text-[#22C55E]',
-  warning: 'border-[#F59E0B]/30 bg-[#F59E0B]/10 text-[#F59E0B]',
-  critical: 'border-[#EF4444]/30 bg-[#EF4444]/10 text-[#EF4444]',
+  cyan: 'border-primary/30 bg-primary/10 text-primary',
+  teal: 'border-secondary/30 bg-secondary/10 text-secondary',
+  purple: 'border-purple/30 bg-purple/10 text-purple',
+  success: 'border-success/30 bg-success/10 text-success',
+  warning: 'border-warning/30 bg-warning/10 text-warning',
+  critical: 'border-critical/30 bg-critical/10 text-critical',
 };
 
 const TREND_STYLES: Record<'up' | 'down' | 'neutral', string> = {
-  up: 'text-[#22C55E] bg-[#22C55E]/10 border-[#22C55E]/25',
-  down: 'text-[#EF4444] bg-[#EF4444]/10 border-[#EF4444]/25',
-  neutral: 'text-[#94A3B8] bg-[#17243A] border-[#243249]',
+  up: 'text-success bg-success/10 border-success/25',
+  down: 'text-critical bg-critical/10 border-critical/25',
+  neutral: 'text-muted-foreground bg-surface-elevated border-border',
 };
 
 /**
@@ -60,18 +60,16 @@ export function StatCard({
     <motion.div
       initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
+      transition={{ duration: 0.22 }}
       className={cn(
-        'relative rounded-xl border border-[#243249] bg-[#111B2D] p-5 shadow-lg transition-colors hover:border-[#38BDF8]/40',
+        'relative rounded-lg border border-border bg-card p-5 transition-colors hover:border-border-strong',
         className
       )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1 min-w-0">
-          <p className="text-xs font-medium uppercase tracking-wider text-[#94A3B8]">
-            {label}
-          </p>
-          <div className="text-2xl sm:text-3xl font-bold font-heading text-[#F8FAFC] tracking-tight">
+          <p className="text-xs font-medium text-muted-foreground">{label}</p>
+          <div className="text-2xl sm:text-3xl font-semibold font-heading text-foreground tracking-tight tabular-reading">
             {typeof value === 'number' ? (
               <AnimatedCounter
                 value={value}
@@ -80,7 +78,7 @@ export function StatCard({
                 suffix={suffix}
               />
             ) : (
-              <span className="font-mono">{value}</span>
+              <span className="font-mono tabular-reading">{value}</span>
             )}
           </div>
         </div>
@@ -88,7 +86,7 @@ export function StatCard({
         {icon && (
           <div
             className={cn(
-              'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border',
+              'flex h-9 w-9 shrink-0 items-center justify-center rounded-md border',
               ACCENT_ICON_STYLES[accent]
             )}
           >
@@ -98,9 +96,9 @@ export function StatCard({
       </div>
 
       {(subtitle || trend) && (
-        <div className="mt-4 flex items-center justify-between gap-2 pt-3 border-t border-[#243249]/60">
+        <div className="mt-4 flex items-center justify-between gap-2 pt-3 border-t border-border/60">
           {subtitle ? (
-            <span className="text-xs text-[#94A3B8] truncate">{subtitle}</span>
+            <span className="text-xs text-muted-foreground truncate">{subtitle}</span>
           ) : (
             <span />
           )}
@@ -108,7 +106,7 @@ export function StatCard({
           {trend && (
             <span
               className={cn(
-                'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-mono font-medium shrink-0',
+                'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-mono font-medium shrink-0 tabular-reading',
                 TREND_STYLES[trend.direction]
               )}
             >
@@ -123,4 +121,3 @@ export function StatCard({
     </motion.div>
   );
 }
-

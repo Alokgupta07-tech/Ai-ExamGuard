@@ -17,6 +17,8 @@ export type QuestionType =
   | 'short_answer'
   | 'essay';
 
+export type QuestionDifficulty = 'easy' | 'medium' | 'hard';
+
 export type EventType =
   | 'NO_FACE_DETECTED'
   | 'MULTIPLE_FACES_DETECTED'
@@ -126,12 +128,17 @@ export interface Exam {
   tenant_id: string;
   title: string;
   description: string | null;
+  instructions: string | null;
   duration_minutes: number;
   start_time: string;
   end_time: string;
   status: ExamStatus;
   settings: Record<string, unknown>;
   total_points: number;
+  passing_marks: number;
+  negative_marking: number;
+  shuffle_questions: boolean;
+  shuffle_options: boolean;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -145,6 +152,9 @@ export interface Question {
   prompt: string;
   points: number;
   explanation: string | null;
+  category: string | null;
+  difficulty: QuestionDifficulty;
+  metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }

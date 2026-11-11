@@ -58,7 +58,7 @@ export function ReviewDrawer({
             exit={{ opacity: 0 }}
             transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
             onClick={onClose}
-            className="fixed inset-0 bg-[#080D18]/75 backdrop-blur-xs"
+            className="fixed inset-0 bg-background/75 backdrop-blur-xs"
           />
 
           {/* Slide-over Panel */}
@@ -68,30 +68,30 @@ export function ReviewDrawer({
             exit={prefersReducedMotion ? { opacity: 0 } : { x: '100%' }}
             transition={{ duration: prefersReducedMotion ? 0 : 0.26, ease: [0.16, 1, 0.3, 1] }}
             className={cn(
-              'relative z-10 flex h-full w-full flex-col border-l border-[#243249] bg-[#0B1220] shadow-2xl shadow-black/70',
+              'relative z-10 flex h-full w-full flex-col border-l border-border bg-sidebar',
               widthClassName,
               className
             )}
           >
             {/* Header */}
-            <div className="flex items-start justify-between gap-4 border-b border-[#243249] bg-[#111B2D]/80 px-6 py-5">
+            <div className="flex items-start justify-between gap-4 border-b border-border bg-card/85 px-6 py-5">
               <div className="space-y-1.5 min-w-0">
                 <div className="flex flex-wrap items-center gap-2.5">
                   <h2
                     id="drawer-title"
-                    className="font-heading text-lg font-semibold text-[#F8FAFC] truncate"
+                    className="font-heading text-lg font-semibold text-foreground truncate"
                   >
                     {title}
                   </h2>
                   {badge}
                 </div>
-                {subtitle && <p className="text-xs text-[#94A3B8] truncate">{subtitle}</p>}
+                {subtitle && <p className="text-xs text-muted-foreground truncate">{subtitle}</p>}
               </div>
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="Close review drawer"
-                className="rounded-lg border border-[#243249] bg-[#17243A]/60 p-1.5 text-[#94A3B8] hover:border-[#38BDF8]/40 hover:text-[#F8FAFC] transition-colors shrink-0 cursor-pointer"
+                className="rounded-md border border-border bg-surface-elevated/60 p-1.5 text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors shrink-0 cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -102,7 +102,7 @@ export function ReviewDrawer({
 
             {/* Sticky Action Footer */}
             {footer && (
-              <div className="border-t border-[#243249] bg-[#111B2D] px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="border-t border-border bg-card px-6 py-4 flex flex-wrap items-center justify-between gap-3">
                 {footer}
               </div>
             )}
