@@ -46,9 +46,14 @@ export type StudentSection =
 export function StudentWorkspace({ section }: { section: StudentSection }) {
   const { data, isLoading, error, refresh } = useDashboardData(getStudentDashboardAction);
 
-  const { upcomingList, availableList, completedSessions } = useMemo(() => {
+  const { upcomingList, availableList, completedSessions, sessionsByExam } = useMemo(() => {
     if (!data) {
-      return { upcomingList: [], availableList: [], completedSessions: [] };
+      return {
+        upcomingList: [],
+        availableList: [],
+        completedSessions: [],
+        sessionsByExam: new Map<string, SessionView>(),
+      };
     }
     const serverNow = data.serverTimeMs;
     const completed = data.sessions.filter(
@@ -70,10 +75,13 @@ export function StudentWorkspace({ section }: { section: StudentSection }) {
       (e) => e.status === 'published' && new Date(e.startTime).getTime() > serverNow
     );
 
+    const sessionMap = new Map(data.sessions.map((s) => [s.examId, s]));
+
     return {
       upcomingList: upcoming,
       availableList: available,
       completedSessions: completed,
+      sessionsByExam: sessionMap,
     };
   }, [data]);
 
@@ -130,8 +138,26 @@ export function StudentWorkspace({ section }: { section: StudentSection }) {
     {
       key: 'action',
       header: 'Access',
-      render: (e) =>
-        e.status === 'active' || e.status === 'published' ? (
+      render: (e) => {
+        const existing = sessionsByExam.get(e.id);
+        if (existing?.status === 'in_progress') {
+          return (
+            <Button asChild size="xs" variant="secondary">
+              <Link href={`/exam/${e.id}`}>
+                Resume Exam
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            </Button>
+          );
+        }
+        if (existing && (existing.status === 'submitted' || existing.status === 'graded')) {
+          return (
+            <Button asChild size="xs" variant="outline">
+              <Link href={`/exam/${e.id}/preflight`}>View Receipt</Link>
+            </Button>
+          );
+        }
+        return e.status === 'active' || e.status === 'published' ? (
           <Button asChild size="xs">
             <Link href={`/exam/${e.id}/preflight`}>
               Pre-Flight
@@ -140,7 +166,8 @@ export function StudentWorkspace({ section }: { section: StudentSection }) {
           </Button>
         ) : (
           <span className="text-xs text-[#94A3B8]">Closed</span>
-        ),
+        );
+      },
     },
   ];
 
@@ -290,29 +317,44 @@ export function StudentWorkspace({ section }: { section: StudentSection }) {
                 />
               ) : (
                 <div className="space-y-3">
-                  {[...availableList, ...upcomingList].slice(0, 5).map((ex) => (
-                    <div
-                      key={ex.id}
-                      className="rounded-xl border border-[#243249] bg-[#111B2D] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs text-[#38BDF8]">{ex.courseCode}</span>
-                          <StatusBadge tone={getExamStatusTone(ex.status)}>{ex.status}</StatusBadge>
+                  {[...availableList, ...upcomingList].slice(0, 5).map((ex) => {
+                    const existing = sessionsByExam.get(ex.id);
+                    const isAvailableNow = availableList.some((a) => a.id === ex.id);
+                    const href =
+                      existing?.status === 'in_progress'
+                        ? `/exam/${ex.id}`
+                        : `/exam/${ex.id}/preflight`;
+                    const ctaLabel =
+                      existing?.status === 'in_progress'
+                        ? 'Resume Exam'
+                        : isAvailableNow
+                          ? 'Enter Exam'
+                          : 'Pre-Flight Check';
+
+                    return (
+                      <div
+                        key={ex.id}
+                        className="rounded-xl border border-[#243249] bg-[#111B2D] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs text-[#38BDF8]">{ex.courseCode}</span>
+                            <StatusBadge tone={getExamStatusTone(ex.status)}>{ex.status}</StatusBadge>
+                          </div>
+                          <p className="font-heading font-semibold text-[#F8FAFC]">{ex.title}</p>
+                          <p className="text-xs font-mono text-[#94A3B8]">
+                            {formatShortDateTime(ex.startTime)} • {ex.durationMinutes} min
+                          </p>
                         </div>
-                        <p className="font-heading font-semibold text-[#F8FAFC]">{ex.title}</p>
-                        <p className="text-xs font-mono text-[#94A3B8]">
-                          {formatShortDateTime(ex.startTime)} • {ex.durationMinutes} min
-                        </p>
+                        <Button asChild size="sm" variant={existing?.status === 'in_progress' ? 'secondary' : 'default'}>
+                          <Link href={href}>
+                            {ctaLabel}
+                            <ArrowRight className="h-3.5 w-3.5" />
+                          </Link>
+                        </Button>
                       </div>
-                      <Button asChild size="sm">
-                        <Link href="/student/device-readiness">
-                          Check Readiness
-                          <ArrowRight className="h-3.5 w-3.5" />
-                        </Link>
-                      </Button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

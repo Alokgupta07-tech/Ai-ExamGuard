@@ -1467,7 +1467,7 @@ export class ExamEngineService {
       supabaseAdmin.from('courses').select('code, name').eq('id', exam.course_id).single(),
       supabaseAdmin
         .from('enrollments')
-        .select('id')
+        .select('course_id')
         .eq('course_id', exam.course_id)
         .eq('student_id', actor.userId)
         .maybeSingle(),

@@ -82,6 +82,9 @@ export async function middleware(request: NextRequest) {
     if (path.startsWith('/student') && !roles.includes('student')) {
       return NextResponse.redirect(new URL('/unauthorized', request.url));
     }
+    if (path.startsWith('/exam') && !roles.includes('student')) {
+      return NextResponse.redirect(new URL('/unauthorized', request.url));
+    }
   }
 
   // 3. Authenticated users accessing login or signup -> Redirect to role dashboard
