@@ -13,7 +13,10 @@ import {
   YAxis,
 } from 'recharts';
 
-const emptySubscribe = () => () => {};
+const noop = () => {};
+const emptySubscribe = () => noop;
+
+/** Returns true only after client hydration so Recharts ResponsiveContainer avoids SSR zero-width warnings. */
 function useIsClient() {
   return useSyncExternalStore(
     emptySubscribe,
