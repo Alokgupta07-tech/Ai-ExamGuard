@@ -4,6 +4,7 @@ import { HeroSection } from '@/components/landing/hero-section';
 import { ProductIntroSection } from '@/components/landing/product-intro';
 import { FeaturesSection } from '@/components/landing/features-section';
 import { HowItWorksSection } from '@/components/landing/how-it-works-section';
+import { ProductShowcaseSection } from '@/components/landing/product-showcase-section';
 import { ArchitecturePrivacySection } from '@/components/landing/architecture-privacy-section';
 import { CtaFooterSection } from '@/components/landing/cta-footer';
 
@@ -16,9 +17,11 @@ export default function HomePage() {
         <ProductIntroSection />
         <FeaturesSection />
         <HowItWorksSection />
+        <ProductShowcaseSection />
         <ArchitecturePrivacySection />
       </main>
       <CtaFooterSection />
     </div>
   );
 }
+

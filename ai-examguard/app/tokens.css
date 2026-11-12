@@ -4,38 +4,38 @@
  */
 
 :root {
-  /* Core Canvas & Surfaces (Light Theme Default) */
-  --background: #F6F8F7;
+  /* Core Canvas & Surfaces (Light Theme Default — Premium Enterprise) */
+  --background: #F7F8F6;
   --sidebar: #FFFFFF;
   --card: #FFFFFF;
   --popover: #FFFFFF;
-  --surface-elevated: #F0F3F2;
+  --surface-elevated: #F0F3F1;
 
   /* Typography & Ink */
-  --foreground: #182321;
-  --card-foreground: #182321;
-  --popover-foreground: #182321;
-  --sidebar-foreground: #182321;
-  --ink-secondary: #64716D;
-  --muted-foreground: #87928E;
+  --foreground: #17231F;
+  --card-foreground: #17231F;
+  --popover-foreground: #17231F;
+  --sidebar-foreground: #17231F;
+  --ink-secondary: #61706A;
+  --muted-foreground: #87928D;
 
   /* Hairlines & Control Borders */
-  --border: #E3E9E6;
-  --border-strong: #D1DCD6;
-  --input: #E3E9E6;
-  --muted: #F0F3F2;
-  --accent: #E9F3EF;
+  --border: #E3E9E5;
+  --border-strong: #D1DCD5;
+  --input: #E3E9E5;
+  --muted: #F0F3F1;
+  --accent: #E8F3EE;
   --accent-foreground: #176B5B;
 
   /* Primary Brand (Deep Teal) */
   --primary: #176B5B;
-  --primary-hover: #115447;
-  --primary-soft: #E9F3EF;
+  --primary-hover: #105647;
+  --primary-soft: #E8F3EE;
   --primary-foreground: #FFFFFF;
 
   /* Secondary Accent (Refined Slate Blue) */
-  --secondary: #356B9A;
-  --secondary-soft: #EAF1F8;
+  --secondary: #376D9B;
+  --secondary-soft: #ECF2F8;
   --secondary-foreground: #FFFFFF;
 
   /* Semantic Status Colors */
@@ -56,9 +56,9 @@
   /* Sidebar Tokens */
   --sidebar-primary: #176B5B;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #E9F3EF;
+  --sidebar-accent: #E8F3EE;
   --sidebar-accent-foreground: #176B5B;
-  --sidebar-border: #E3E9E6;
+  --sidebar-border: #E3E9E5;
   --sidebar-ring: #176B5B;
 
   /* Charts */
