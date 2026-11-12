@@ -4,26 +4,26 @@
  */
 
 :root {
-  /* Core Canvas & Surfaces (Light Theme Default — Premium Enterprise) */
+  /* Core Canvas & Surfaces (Light Theme Default — Premium Minimal Enterprise) */
   --background: #F7F8F6;
   --sidebar: #FFFFFF;
   --card: #FFFFFF;
   --popover: #FFFFFF;
-  --surface-elevated: #F0F3F1;
+  --surface-elevated: #FFFFFF;
 
   /* Typography & Ink */
-  --foreground: #17231F;
-  --card-foreground: #17231F;
-  --popover-foreground: #17231F;
-  --sidebar-foreground: #17231F;
-  --ink-secondary: #61706A;
-  --muted-foreground: #87928D;
+  --foreground: #182321;
+  --card-foreground: #182321;
+  --popover-foreground: #182321;
+  --sidebar-foreground: #182321;
+  --ink-secondary: #64716D;
+  --muted-foreground: #64716D;
 
   /* Hairlines & Control Borders */
-  --border: #E3E9E5;
+  --border: #E3E9E6;
   --border-strong: #D1DCD5;
-  --input: #E3E9E5;
-  --muted: #F0F3F1;
+  --input: #E3E9E6;
+  --muted: #F7F8F6;
   --accent: #E8F3EE;
   --accent-foreground: #176B5B;
 
@@ -34,7 +34,7 @@
   --primary-foreground: #FFFFFF;
 
   /* Secondary Accent (Refined Slate Blue) */
-  --secondary: #376D9B;
+  --secondary: #356B9A;
   --secondary-soft: #ECF2F8;
   --secondary-foreground: #FFFFFF;
 

@@ -8,17 +8,14 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const NAV_LINKS = [
-  { href: '#overview', label: 'Platform' },
+  { href: '#platform', label: 'Platform' },
   { href: '#capabilities', label: 'Capabilities' },
-  { href: '#workflow', label: 'Workflow' },
-  { href: '#experience', label: 'Experience' },
-  { href: '#security', label: 'Architecture' },
   { href: '#privacy', label: 'Privacy' },
 ];
 
 /**
- * Sticky solid-surface header for the public AI ExamGuard platform.
- * Features institutional branding, version pill, smooth anchor links, and mobile drawer.
+ * SECTION 1 — Compact Professional Navbar
+ * Minimal, elegant, and responsive.
  */
 export function LandingNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -27,7 +24,7 @@ export function LandingNav() {
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollPosition = window.scrollY + 100;
+      const scrollPosition = window.scrollY + 120;
       for (const item of NAV_LINKS) {
         const id = item.href.replace('#', '');
         const el = document.getElementById(id);
@@ -46,25 +43,20 @@ export function LandingNav() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-md">
-      <div className="mx-auto max-w-7xl h-16 px-4 sm:px-8 flex items-center justify-between gap-4">
-        {/* Left: Shield logo, product wordmark, version indicator */}
-        <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
-            <ShieldCheck className="h-4.5 w-4.5" />
+    <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-md">
+      <div className="mx-auto max-w-6xl h-14 px-4 sm:px-6 flex items-center justify-between gap-4">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2 shrink-0 group">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
+            <ShieldCheck className="h-4 w-4" />
           </div>
-          <div className="flex items-center gap-2">
-            <span className="font-heading text-base font-bold tracking-tight text-foreground">
-              AI <span className="text-primary">ExamGuard</span>
-            </span>
-            <span className="hidden sm:inline font-mono text-[10px] font-semibold tracking-wider uppercase text-primary/80 bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-              v1.0
-            </span>
-          </div>
+          <span className="font-heading text-sm font-semibold tracking-tight text-foreground">
+            AI <span className="text-primary font-bold">ExamGuard</span>
+          </span>
         </Link>
 
         {/* Center: Desktop Navigation Links */}
-        <nav className="hidden lg:flex items-center gap-1" aria-label="Landing navigation">
+        <nav className="hidden md:flex items-center gap-1" aria-label="Main navigation">
           {NAV_LINKS.map((item) => {
             const isActive = activeSection === item.href;
             return (
@@ -75,7 +67,7 @@ export function LandingNav() {
                   'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
                   isActive
                     ? 'text-primary bg-primary/10 font-semibold'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-surface-elevated/70'
+                    : 'text-ink-secondary hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
                 )}
               >
                 {item.label}
@@ -85,30 +77,30 @@ export function LandingNav() {
         </nav>
 
         {/* Right: Auth & Primary Action Buttons */}
-        <div className="hidden sm:flex items-center gap-2.5">
+        <div className="hidden md:flex items-center gap-2">
           <Button
             asChild
             variant="ghost"
             size="sm"
-            className="text-xs text-muted-foreground hover:text-foreground"
+            className="h-8 px-3 text-xs text-ink-secondary hover:text-foreground"
           >
             <Link href="/login">Institutional Sign In</Link>
           </Button>
-          <Button asChild size="sm" className="text-xs">
-            <Link href="/signup" className="flex items-center gap-1.5">
-              <span>Launch University Workspace</span>
-              <ArrowRight className="h-3.5 w-3.5" />
+          <Button asChild size="sm" className="h-8 px-3.5 text-xs font-medium">
+            <Link href="/signup" className="flex items-center gap-1">
+              <span>Launch Workspace</span>
+              <ArrowRight className="h-3 w-3" />
             </Link>
           </Button>
         </div>
 
-        {/* Mobile menu button */}
+        {/* Mobile Menu Toggle Button */}
         <button
           type="button"
           onClick={() => setMobileOpen((prev) => !prev)}
-          aria-label="Toggle navigation menu"
+          className="md:hidden flex h-8 w-8 items-center justify-center rounded-md border border-border text-foreground hover:bg-black/5"
           aria-expanded={mobileOpen}
-          className="lg:hidden flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card text-foreground cursor-pointer hover:bg-surface-elevated"
+          aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
         >
           {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </button>
@@ -118,11 +110,11 @@ export function LandingNav() {
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            initial={prefersReducedMotion ? false : { opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
+            animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, height: 'auto' }}
             exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="lg:hidden border-t border-border bg-sidebar px-4 py-4 space-y-3"
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="md:hidden border-b border-border bg-background px-4 py-3 space-y-2 overflow-hidden"
           >
             <nav className="flex flex-col space-y-1">
               {NAV_LINKS.map((item) => (
@@ -130,18 +122,22 @@ export function LandingNav() {
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
-                  className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-surface-elevated hover:text-foreground"
+                  className="rounded-md px-3 py-2 text-xs font-medium text-ink-secondary hover:text-foreground hover:bg-black/5"
                 >
                   {item.label}
                 </a>
               ))}
             </nav>
-            <div className="pt-3 border-t border-border flex flex-col gap-2">
-              <Button asChild variant="outline" className="w-full text-xs">
-                <Link href="/login">Institutional Sign In</Link>
+            <div className="pt-2 border-t border-border flex flex-col gap-2">
+              <Button asChild variant="outline" size="sm" className="w-full text-xs h-8">
+                <Link href="/login" onClick={() => setMobileOpen(false)}>
+                  Institutional Sign In
+                </Link>
               </Button>
-              <Button asChild className="w-full text-xs">
-                <Link href="/signup">Launch University Workspace</Link>
+              <Button asChild size="sm" className="w-full text-xs h-8">
+                <Link href="/signup" onClick={() => setMobileOpen(false)}>
+                  Launch Workspace
+                </Link>
               </Button>
             </div>
           </motion.div>
