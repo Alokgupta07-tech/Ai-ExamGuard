@@ -50,19 +50,48 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Helper to resolve user's roles from memberships with metadata fallback
-  const resolveUserRoles = async () => {
-    if (!user) return [] as string[];
+  // Helper to resolve user's roles from memberships with fast cookie cache
+  const resolveUserRoles = async (): Promise<string[]> => {
+    if (!user) return [];
+
+    // Fast path: check if request already carries verified role cookie for this user
+    try {
+      const cachedCookie = request.cookies.get('sb-verified-roles')?.value;
+      if (cachedCookie) {
+        const parsed = JSON.parse(cachedCookie);
+        if (parsed.uid === user.id && Array.isArray(parsed.roles) && parsed.exp > Date.now()) {
+          return parsed.roles as string[];
+        }
+      }
+    } catch {
+      // Fall through to database lookup on invalid cookie
+    }
+
     const { data: memberships } = await supabase
       .from('memberships')
       .select('role')
       .eq('user_id', user.id);
 
     const dbRoles = (memberships || []).map((m: { role: string }) => m.role);
-    if (dbRoles.length > 0) return dbRoles;
+    const resolvedRoles = dbRoles.length > 0 ? dbRoles : ['student'];
 
-    // Security: never trust client-mutable user_metadata.role for privileged portals
-    return ['student'];
+    // Cache verified roles in cookie for 5 minutes to avoid redundant DB queries on every navigation/prefetch
+    try {
+      response.cookies.set('sb-verified-roles', JSON.stringify({
+        uid: user.id,
+        roles: resolvedRoles,
+        exp: Date.now() + 300_000,
+      }), {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 300,
+      });
+    } catch {
+      // Ignore cookie set errors if headers are immutable
+    }
+
+    return resolvedRoles;
   };
 
   // 2. Enforce strict role isolation across protected dashboard routes

@@ -1,8 +1,6 @@
 'use client';
 
 import React, { Suspense, useState } from 'react';
-import { usePathname } from 'next/navigation';
-import { motion, useReducedMotion } from 'motion/react';
 import { useAuth } from '@/components/providers/auth-provider';
 import { AppSidebar } from './app-sidebar';
 import { AppHeader } from './app-header';
@@ -15,8 +13,6 @@ export interface AppShellProps {
  * Global responsive dashboard shell combining collapsible sidebar, topbar, and viewport.
  */
 export function AppShell({ children }: AppShellProps) {
-  const pathname = usePathname();
-  const prefersReducedMotion = useReducedMotion();
   const { user, role, signOut } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -52,15 +48,9 @@ export function AppShell({ children }: AppShellProps) {
         />
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-          <motion.div
-            key={pathname}
-            initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            className="mx-auto max-w-7xl"
-          >
+          <div className="mx-auto max-w-7xl">
             {children}
-          </motion.div>
+          </div>
         </main>
       </div>
     </div>

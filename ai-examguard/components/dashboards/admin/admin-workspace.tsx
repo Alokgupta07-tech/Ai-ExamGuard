@@ -84,7 +84,10 @@ export function AdminWorkspace({
   section: AdminSection;
   initialRoleFilter?: UserRole | null;
 }) {
-  const { data, isLoading, error, refresh } = useDashboardData(getAdminDashboardAction);
+  const { data, isLoading, error, refresh } = useDashboardData(
+    getAdminDashboardAction,
+    'admin-workspace'
+  );
   const [banner, setBanner] = useState<{ tone: 'success' | 'critical'; text: string } | null>(
     null
   );

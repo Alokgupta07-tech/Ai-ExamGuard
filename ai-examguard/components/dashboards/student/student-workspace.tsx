@@ -44,7 +44,10 @@ export type StudentSection =
   | 'support';
 
 export function StudentWorkspace({ section }: { section: StudentSection }) {
-  const { data, isLoading, error, refresh } = useDashboardData(getStudentDashboardAction);
+  const { data, isLoading, error, refresh } = useDashboardData(
+    getStudentDashboardAction,
+    'student-workspace'
+  );
 
   const { upcomingList, availableList, completedSessions, sessionsByExam } = useMemo(() => {
     if (!data) {

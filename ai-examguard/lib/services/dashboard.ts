@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import {
@@ -53,39 +54,25 @@ export interface VerifiedActor {
 }
 
 /**
- * Authenticates the caller via Supabase Auth and resolves their verified tenant membership & roles.
+ * Memoized actor membership resolution within the request lifecycle.
  */
-export async function requireRoleActor(allowedRoles: UserRole[]): Promise<VerifiedActor> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    throw new Error('Unauthorized: Authentication required.');
-  }
-
+const getCachedActorData = cache(async (userId: string) => {
   const { data: memberships, error: memError } = await supabaseAdmin
     .from('memberships')
     .select('tenant_id, role')
-    .eq('user_id', user.id);
+    .eq('user_id', userId);
 
   if (memError) {
     throw new Error(`Failed to verify institutional role: ${memError.message}`);
   }
 
   const rows = (memberships || []) as { tenant_id: string; role: UserRole }[];
-  const matching = rows.filter((r) => allowedRoles.includes(r.role));
-  const firstMatch = matching[0];
-
-  if (!firstMatch) {
-    throw new Error(
-      `Forbidden: Requires one of [${allowedRoles.join(', ')}] institutional roles.`
-    );
+  const firstRow = rows[0];
+  if (!firstRow) {
+    throw new Error('No tenant membership found for user.');
   }
 
-  const activeTenantId = firstMatch.tenant_id;
+  const activeTenantId = firstRow.tenant_id;
   const tenantRoles = rows
     .filter((r) => r.tenant_id === activeTenantId)
     .map((r) => r.role);
@@ -99,24 +86,62 @@ export async function requireRoleActor(allowedRoles: UserRole[]): Promise<Verifi
     supabaseAdmin
       .from('profiles')
       .select('id, email, full_name')
-      .eq('id', user.id)
+      .eq('id', userId)
       .maybeSingle(),
   ]);
 
   return {
-    userId: user.id,
-    email: profile?.email || user.email || '',
-    fullName:
-      profile?.full_name ||
-      (user.user_metadata?.full_name as string | undefined) ||
-      user.email?.split('@')[0] ||
-      'User',
+    userId,
+    email: profile?.email || '',
+    fullName: profile?.full_name || 'User',
     tenantId: activeTenantId,
     tenantName: tenant?.name || 'University Tenant',
     tenantSlug: tenant?.slug || 'default',
     tenantDomain: tenant?.domain ?? null,
     tenantSettings: (tenant?.settings as TenantSettings) || {},
     roles: tenantRoles,
+    allRows: rows,
+  };
+});
+
+/**
+ * Authenticates the caller via Supabase Auth and resolves their verified tenant membership & roles.
+ */
+export async function requireRoleActor(allowedRoles: UserRole[]): Promise<VerifiedActor> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error('Unauthorized: Authentication required.');
+  }
+
+  const actorData = await getCachedActorData(user.id);
+  const matching = actorData.allRows.filter((r) => allowedRoles.includes(r.role));
+  const firstMatch = matching[0];
+
+  if (!firstMatch) {
+    throw new Error(
+      `Forbidden: Requires one of [${allowedRoles.join(', ')}] institutional roles.`
+    );
+  }
+
+  return {
+    userId: user.id,
+    email: actorData.email || user.email || '',
+    fullName:
+      actorData.fullName ||
+      (user.user_metadata?.full_name as string | undefined) ||
+      user.email?.split('@')[0] ||
+      'User',
+    tenantId: actorData.tenantId,
+    tenantName: actorData.tenantName,
+    tenantSlug: actorData.tenantSlug,
+    tenantDomain: actorData.tenantDomain,
+    tenantSettings: actorData.tenantSettings,
+    roles: actorData.roles,
   };
 }
 

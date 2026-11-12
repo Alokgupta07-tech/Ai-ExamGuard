@@ -70,7 +70,10 @@ export type FacultySection =
 
 export function FacultyWorkspace({ section }: { section: FacultySection }) {
   const router = useRouter();
-  const { data, isLoading, error, refresh } = useDashboardData(getFacultyDashboardAction);
+  const { data, isLoading, error, refresh } = useDashboardData(
+    getFacultyDashboardAction,
+    'faculty-workspace'
+  );
   const realtime = useMonitoringRealtime({
     tenantId: data?.tenantId ?? null,
     enabled: Boolean(data?.tenantId),

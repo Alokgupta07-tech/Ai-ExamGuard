@@ -51,7 +51,10 @@ export type InvigilatorSection =
   | 'reports';
 
 export function InvigilatorWorkspace({ section }: { section: InvigilatorSection }) {
-  const { data, isLoading, error, refresh } = useDashboardData(getInvigilatorDashboardAction);
+  const { data, isLoading, error, refresh } = useDashboardData(
+    getInvigilatorDashboardAction,
+    'invigilator-workspace'
+  );
   const { connectionStatus: realtimeStatus } = useMonitoringRealtime({
     tenantId: data?.tenantId ?? null,
     enabled: Boolean(data?.tenantId),

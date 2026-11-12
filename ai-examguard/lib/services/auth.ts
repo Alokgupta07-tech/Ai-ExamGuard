@@ -101,6 +101,10 @@ export class AuthService {
    * Sign out current user
    */
   static async signOut() {
+    // Clear verified role cookie
+    if (typeof document !== 'undefined') {
+      document.cookie = 'sb-verified-roles=; path=/; max-age=0;';
+    }
     const { error } = await this.supabase.auth.signOut();
     if (error) {
       throw new Error(error.message);
