@@ -227,6 +227,28 @@
     border-color var(--dur-short) var(--ease-out);
 }
 
+/* 3D Cylindrical Carousel & Card Flip Styles */
+.perspective-cylinder {
+  perspective: 1200px;
+  perspective-origin: 50% 48%;
+  transform-style: preserve-3d;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.transform-gpu {
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
 @media (hover: hover) {
   .card-hover-elevate:hover {
     transform: translateY(-1.5px);
