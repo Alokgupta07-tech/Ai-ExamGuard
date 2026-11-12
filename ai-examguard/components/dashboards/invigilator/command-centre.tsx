@@ -15,12 +15,16 @@ import {
   FlaskConical,
   LayoutGrid,
   List,
+  Megaphone,
   Mic,
+  Radio,
   Search,
+  Send,
   ShieldAlert,
   Wifi,
   XCircle,
 } from 'lucide-react';
+import { LiveKitRosterGrid } from './livekit-roster-grid';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -99,6 +103,77 @@ export function InvigilatorCommandCentre({
 
   // Bottom panel tab
   const [bottomTab, setBottomTab] = useState<BottomTab>('timeline');
+
+  // Top 5 Navigation Tabs (Reference Image 3 layout)
+  type MainNavTab = 'live_proctoring' | 'summary' | 'critical_alerts' | 'pending_reviews' | 'event_history';
+  const [activeNavTab, setActiveNavTab] = useState<MainNavTab>('live_proctoring');
+
+  // LiveKit WebRTC state for live student surveillance
+  const [liveKitToken, setLiveKitToken] = useState<string | null>(null);
+  const [liveKitWsUrl, setLiveKitWsUrl] = useState<string | null>(null);
+  const [_liveKitLoading, setLiveKitLoading] = useState(false);
+
+  // Communication & Announcement state
+  const [announcementText, setAnnouncementText] = useState('');
+  const [isSendingAnnouncement, setIsSendingAnnouncement] = useState(false);
+  const [announcementToast, setAnnouncementToast] = useState<string | null>(null);
+
+  const effectiveExamId = selectedExamId !== 'all' ? selectedExamId : data.exams[0]?.id;
+
+  React.useEffect(() => {
+    if (!effectiveExamId) return;
+    let cancelled = false;
+    setLiveKitLoading(true);
+
+    fetch('/api/monitoring/livekit/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        examId: effectiveExamId,
+        roleOverride: 'invigilator',
+      }),
+    })
+      .then((res) => res.json())
+      .then((json) => {
+        if (!cancelled && json.token) {
+          setLiveKitToken(json.token);
+          setLiveKitWsUrl(json.wsUrl);
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setLiveKitLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [effectiveExamId]);
+
+  const handleSendAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!announcementText.trim() || !effectiveExamId) return;
+    setIsSendingAnnouncement(true);
+    setAnnouncementToast(null);
+    try {
+      const res = await fetch('/api/monitoring/support-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          examId: effectiveExamId,
+          messageType: 'broadcast_announcement',
+          content: announcementText.trim(),
+        }),
+      });
+      if (res.ok) {
+        setAnnouncementText('');
+        setAnnouncementToast('Announcement broadcast successfully to all active examinees.');
+        setTimeout(() => setAnnouncementToast(null), 4000);
+      }
+    } finally {
+      setIsSendingAnnouncement(false);
+    }
+  };
 
   const sessionMap = useMemo(
     () => new Map(data.sessions.map((s) => [s.id, s])),
@@ -272,6 +347,61 @@ export function InvigilatorCommandCentre({
 
   return (
     <div className="space-y-4">
+      {/* TOP HEADER: 5 Navigation Tabs & Live Surveillance Bar (Reference Image 3) */}
+      <div className="rounded-xl border border-border bg-card p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {(
+            [
+              { id: 'live_proctoring', label: 'Live Proctoring', icon: Radio },
+              { id: 'summary', label: 'Examination Summary', icon: List },
+              { id: 'critical_alerts', label: 'Critical Alerts', icon: ShieldAlert },
+              { id: 'pending_reviews', label: 'Pending Reviews', icon: Flag },
+              { id: 'event_history', label: 'Event History', icon: Activity },
+            ] as const
+          ).map((t) => {
+            const Icon = t.icon;
+            const isActive = activeNavTab === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => {
+                  setActiveNavTab(t.id);
+                  if (t.id === 'live_proctoring') setCentreView('grid');
+                  if (t.id === 'summary') setCentreView('table');
+                  if (t.id === 'critical_alerts') {
+                    setRiskFilter('PRIORITY_REVIEW');
+                    setQueueFilter('pending');
+                  }
+                  if (t.id === 'pending_reviews') setRiskFilter('REVIEW_SUGGESTED');
+                  if (t.id === 'event_history') setBottomTab('timeline');
+                }}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-primary text-primary-foreground font-semibold shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-surface-elevated/80'
+                }`}
+              >
+                <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
+                <span>{t.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {announcementToast && (
+            <span className="text-xs font-mono text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-md border border-emerald-200 dark:border-emerald-800 animate-fade-in">
+              {announcementToast}
+            </span>
+          )}
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono border bg-surface-elevated text-foreground">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            LiveKit WebRTC Active
+          </span>
+        </div>
+      </div>
+
       {/* Main 3-Column Real-Time Workspace */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
         {/* LEFT SIDEBAR: Active Exams, Search, Status & Candidate Filters */}
@@ -669,6 +799,23 @@ export function InvigilatorCommandCentre({
                 </tbody>
               </table>
             </div>
+          ) : liveKitToken && liveKitWsUrl && effectiveExamId ? (
+            <div className="space-y-3">
+              <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-mono text-emerald-800 dark:text-emerald-300 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  LiveKit SFU Connected — Receiving real-time candidate video feeds
+                </span>
+                <span className="text-[11px] opacity-80">Room: exam_{effectiveExamId.slice(0, 8)}</span>
+              </div>
+              <LiveKitRosterGrid
+                examId={effectiveExamId}
+                token={liveKitToken}
+                wsUrl={liveKitWsUrl}
+                sessions={pagedSessions}
+                onInspectCandidate={onInspectCandidate}
+              />
+            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {pagedSessions.map((s) => {
@@ -956,6 +1103,40 @@ export function InvigilatorCommandCentre({
                 })}
               </AnimatePresence>
             )}
+          </div>
+
+          {/* Invigilator Communication & Announcement Panel */}
+          <div className="pt-3 border-t border-border space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Megaphone className="h-3.5 w-3.5 text-primary" />
+                Exam Announcement & Support
+              </span>
+              <span className="text-[10px] font-mono text-muted-foreground">Broadcast</span>
+            </div>
+            <form onSubmit={handleSendAnnouncement} className="space-y-2">
+              <Input
+                value={announcementText}
+                onChange={(e) => setAnnouncementText(e.target.value)}
+                placeholder="Broadcast official notice to all candidates..."
+                className="text-xs h-8 bg-surface-elevated/60"
+                disabled={isSendingAnnouncement}
+              />
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] text-muted-foreground">
+                  Audit-logged to examination security record.
+                </p>
+                <Button
+                  type="submit"
+                  size="xs"
+                  disabled={isSendingAnnouncement || !announcementText.trim()}
+                  className="gap-1.5"
+                >
+                  <Send className="h-3 w-3" />
+                  Broadcast
+                </Button>
+              </div>
+            </form>
           </div>
         </section>
       </div>

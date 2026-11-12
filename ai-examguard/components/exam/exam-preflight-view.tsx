@@ -17,6 +17,8 @@ import {
   RefreshCw,
   ShieldCheck,
   XCircle,
+  Crosshair,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/shared/status-badge';
@@ -25,6 +27,8 @@ import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
 import { SubmissionConfirmation } from '@/components/exam/submission-confirmation';
 import { AudioMonitorPanel } from '@/components/proctoring/audio-monitor-panel';
 import { CameraMonitorPanel } from '@/components/proctoring/camera-monitor-panel';
+import { PreflightCalibration } from '@/components/exam/preflight-calibration';
+import type { GazeCalibrationData } from '@/lib/proctoring/gaze-calibration';
 import { useAudioProctor } from '@/hooks/use-audio-proctor';
 import { useCameraProctor } from '@/hooks/use-camera-proctor';
 import type { ExamPreflightPayload } from '@/types/exam-session';
@@ -66,6 +70,26 @@ export function ExamPreflightView({ examId }: { examId: string }) {
   const [agreedHonor, setAgreedHonor] = useState(false);
   const [entering, setEntering] = useState(false);
   const [waitRemainingMs, setWaitRemainingMs] = useState<number>(0);
+  const [showCalibration, setShowCalibration] = useState(false);
+  const [calibratedData, setCalibratedData] = useState<GazeCalibrationData | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = sessionStorage.getItem(`exam_gaze_calibration_${examId}`);
+        return raw ? (JSON.parse(raw) as GazeCalibrationData) : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  const handleCalibrationComplete = useCallback((data: GazeCalibrationData) => {
+    setCalibratedData(data);
+    setShowCalibration(false);
+    try {
+      sessionStorage.setItem(`exam_gaze_calibration_${examId}`, JSON.stringify(data));
+    } catch {}
+  }, [examId]);
 
   const reqCameraSetting = payload?.exam.settings?.require_camera !== false;
   const reqAudioSetting = payload?.exam.settings?.require_audio !== false;
@@ -521,6 +545,47 @@ export function ExamPreflightView({ examId }: { examId: string }) {
           </div>
 
           {reqCamera && (
+            <div className="rounded-lg border border-border bg-background/50 p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-md bg-primary/10 text-primary">
+                    <Crosshair className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-semibold text-foreground">
+                      Gaze &amp; Head-Pose Calibration
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground">
+                      Calibrate baseline eye and head alignment so natural glances do not trigger false alerts.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {calibratedData ? (
+                    <StatusBadge tone="success" className="font-mono text-[10px]">
+                      Calibrated (Yaw: &plusmn;{calibratedData.thresholds.maxRightYaw.toFixed(0)}&deg;, Pitch: &plusmn;{calibratedData.thresholds.maxPitchDown.toFixed(0)}&deg;)
+                    </StatusBadge>
+                  ) : (
+                    <StatusBadge tone="neutral" className="text-[10px]">
+                      Pending Calibration
+                    </StatusBadge>
+                  )}
+                  <Button
+                    type="button"
+                    variant={calibratedData ? 'outline' : 'default'}
+                    size="xs"
+                    onClick={() => setShowCalibration(true)}
+                  >
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    {calibratedData ? 'Recalibrate' : 'Start Calibration'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {reqCamera && (
             <CameraMonitorPanel
               variant="preflight"
               snapshot={proctorSnapshot}
@@ -600,6 +665,26 @@ export function ExamPreflightView({ examId }: { examId: string }) {
           </section>
         )}
       </main>
+
+      {/* Interactive Gaze Calibration Modal */}
+      {showCalibration && payload && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="relative w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-xl">
+            <button
+              type="button"
+              onClick={() => setShowCalibration(false)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground text-xs"
+            >
+              ✕ Close
+            </button>
+            <PreflightCalibration
+              examId={examId}
+              examTitle={payload.exam.title}
+              onCalibrationComplete={handleCalibrationComplete}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

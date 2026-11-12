@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Calendar, Clock, FileText, Loader2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,14 +40,18 @@ function defaultWindowValues() {
 
 /**
  * Wizard Step 1: Examination information (Title, Course, Description, Instructions, Date, Start/End Time).
+ * High-performance implementation: uses uncontrolled refs for text inputs to guarantee 0ms input delay
+ * and eliminate INP input lag.
  */
 export function Step1Info({ courses, exam, onSaved }: Step1InfoProps) {
   const defaults = useMemo(() => defaultWindowValues(), []);
 
+  // Text inputs use refs so keystrokes never trigger React re-renders or layout thrashing
+  const titleRef = useRef<HTMLInputElement>(null);
+  const descRef = useRef<HTMLTextAreaElement>(null);
+  const instRef = useRef<HTMLTextAreaElement>(null);
+
   const [courseId, setCourseId] = useState(exam?.courseId || courses[0]?.id || '');
-  const [title, setTitle] = useState(exam?.title || '');
-  const [description, setDescription] = useState(exam?.description || '');
-  const [instructions, setInstructions] = useState(exam?.instructions || '');
   const [examDate, setExamDate] = useState(
     exam ? toLocalDateInput(exam.startTime) : defaults.date
   );
@@ -62,9 +66,37 @@ export function Step1Info({ courses, exam, onSaved }: Step1InfoProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  // Sync ref values when an existing exam is loaded asynchronously
+  useEffect(() => {
+    if (exam) {
+      if (titleRef.current) titleRef.current.value = exam.title || '';
+      if (descRef.current) descRef.current.value = exam.description || '';
+      if (instRef.current) instRef.current.value = exam.instructions || '';
+      if (exam.courseId) setCourseId(exam.courseId);
+      if (exam.startTime) {
+        setExamDate(toLocalDateInput(exam.startTime));
+        setStartTimeOfDay(toLocalTimeInput(exam.startTime));
+      }
+      if (exam.endTime) {
+        setEndTimeOfDay(toLocalTimeInput(exam.endTime));
+      }
+    }
+  }, [exam]);
+
   const submitCore = async (advance: boolean) => {
     setFormError(null);
     setFieldErrors({});
+
+    const titleValue = titleRef.current?.value.trim() || '';
+    const descValue = descRef.current?.value.trim() || '';
+    const instValue = instRef.current?.value.trim() || '';
+
+    if (!titleValue) {
+      setFieldErrors({ title: 'Examination title is required.' });
+      setFormError('Examination title is required.');
+      titleRef.current?.focus();
+      return;
+    }
 
     if (!examDate || !startTimeOfDay || !endTimeOfDay) {
       setFormError('Examination date, start time, and end time are required.');
@@ -88,9 +120,9 @@ export function Step1Info({ courses, exam, onSaved }: Step1InfoProps) {
     setSaving(true);
     const payload = {
       courseId: courseId || courses[0]?.id || '',
-      title,
-      description,
-      instructions,
+      title: titleValue,
+      description: descValue,
+      instructions: instValue,
       startTime: startLocal.toISOString(),
       endTime: endLocal.toISOString(),
     };
@@ -138,12 +170,13 @@ export function Step1Info({ courses, exam, onSaved }: Step1InfoProps) {
           <Label htmlFor="wiz-title">Examination title</Label>
           <Input
             id="wiz-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            ref={titleRef}
+            defaultValue={exam?.title || ''}
             placeholder="CS-301 Midterm Assessment"
             autoComplete="off"
             spellCheck={false}
             required
+            className="transition-none focus:transition-none"
           />
           {fieldErrors.title && (
             <p className="text-xs text-destructive">{fieldErrors.title}</p>
@@ -228,11 +261,11 @@ export function Step1Info({ courses, exam, onSaved }: Step1InfoProps) {
         <Label htmlFor="wiz-desc">Description</Label>
         <textarea
           id="wiz-desc"
+          ref={descRef}
           rows={2}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          defaultValue={exam?.description || ''}
           placeholder="Concise syllabus scope covered in this assessment..."
-          className="w-full rounded-md border border-border bg-sidebar p-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-primary"
+          className="w-full rounded-md border border-border bg-sidebar p-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-primary transition-none"
         />
         {fieldErrors.description && (
           <p className="text-xs text-destructive">{fieldErrors.description}</p>
@@ -243,11 +276,11 @@ export function Step1Info({ courses, exam, onSaved }: Step1InfoProps) {
         <Label htmlFor="wiz-inst">Candidate instructions</Label>
         <textarea
           id="wiz-inst"
+          ref={instRef}
           rows={4}
-          value={instructions}
-          onChange={(e) => setInstructions(e.target.value)}
+          defaultValue={exam?.instructions || ''}
           placeholder="Shown to examinees during pre-flight verification before the timer begins..."
-          className="w-full rounded-md border border-border bg-sidebar p-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-primary"
+          className="w-full rounded-md border border-border bg-sidebar p-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-primary transition-none"
         />
         {fieldErrors.instructions && (
           <p className="text-xs text-destructive">{fieldErrors.instructions}</p>

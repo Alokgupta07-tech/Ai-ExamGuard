@@ -20,6 +20,7 @@ import { UnifiedProctorPanel } from '@/components/proctoring/unified-proctor-pan
 import { useCameraProctor } from '@/hooks/use-camera-proctor';
 import { useAudioProctor } from '@/hooks/use-audio-proctor';
 import { useBrowserMonitor } from '@/hooks/use-browser-monitor';
+import { LiveKitPublisher } from '@/components/proctoring/livekit-publisher';
 import type { StudentExamPaper } from '@/types/exam-engine';
 import type {
   ActiveExamSessionState,
@@ -850,6 +851,13 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
 
         <div className="w-full lg:w-72 lg:shrink-0 border-t lg:border-t-0 lg:border-l border-border bg-sidebar/50 p-3 sm:p-4">
           <div className="lg:sticky lg:top-20 space-y-3">
+            {/* Live WebRTC Surveillance Stream to LiveKit SFU */}
+            <LiveKitPublisher
+              examId={examId}
+              sessionId={session?.id}
+              enabled={Boolean(session && !receipt && requireCameraForSession)}
+            />
+
             <UnifiedProctorPanel
               cameraSnapshot={proctorSnapshot}
               audioSnapshot={audioSnapshot}
