@@ -83,3 +83,4 @@ AI ExamGuard uses an **edge-first, privacy-preserving proctoring pipeline**.
 | **Second Person** | $\ge 2$ persons sustained $\ge 2.5\text{s}$ | Dispatches strike dialog, logs strike | ✅ Yes (Integrity Strike) |
 | **Tab Switched** | Page Visibility API | Dispatches strike dialog, logs strike | ✅ Yes (Integrity Strike) |
 | **Sustained Speech** | Web Audio speech-band VAD $\ge 2.5\text{s}$ | Dispatches strike dialog, logs strike | ✅ Yes (Integrity Strike) |
+

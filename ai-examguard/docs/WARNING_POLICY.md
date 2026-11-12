@@ -90,3 +90,4 @@ Faculty and Exam Administrators can configure policies for each individual exam 
 * Change maximum allowable warnings (1 to 5).
 * Adjust cooldown duration.
 * Selectively toggle individual triggers (e.g., allow speech activity for oral exams, or disable fullscreen requirements for open-book tests).
+

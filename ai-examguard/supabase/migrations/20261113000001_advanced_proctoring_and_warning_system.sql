@@ -154,3 +154,4 @@ USING (
       AND p.role IN ('faculty', 'invigilator', 'admin', 'super_admin')
   )
 );
+

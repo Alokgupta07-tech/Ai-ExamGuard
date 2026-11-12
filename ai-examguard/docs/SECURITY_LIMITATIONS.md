@@ -50,3 +50,4 @@ For high-stakes summative exams (such as Bar Examinations, Medical Board Certifi
    - SEB locks the computer into a full kiosk mode: disables task manager, disables dual monitors, prevents application launching, and kills unauthorized background processes (Discord, Zoom, TeamViewer).
 3. **Hybrid Architecture:**
    - AI ExamGuard combines SEB's operating system lock-down with our browser-based MediaPipe AI computer vision for comprehensive physical and digital integrity.
+

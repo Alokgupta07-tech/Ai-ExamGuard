@@ -70,3 +70,4 @@ const navigateToIndex = useCallback((targetIndex: number) => {
 * **Stress Test:** Automated test clicking "Next" at 20Hz (every 50ms) across 20 questions.
   - *Result:* Traversed questions $1 \to 2 \to 3 \to \dots \to 20$ sequentially with zero dropped or skipped numbers.
 * **Latency Check:** Average DOM paint time from click to question render: **$8.4\text{ms}$** (down from $420\text{ms}$).
+
