@@ -300,8 +300,59 @@ export function CandidateDetailDrawer({
             />
           )}
 
+          {/* Integrity Strike Alert Banner if warnings recorded */}
+          {((activeSession.warningCount ?? 0) > 0 || activeSession.autoSubmitted) && (
+            <div
+              className={`rounded-xl border p-4 space-y-2 ${
+                activeSession.autoSubmitted
+                  ? 'border-destructive/40 bg-destructive/10'
+                  : (activeSession.warningCount ?? 0) >= 2
+                    ? 'border-destructive/30 bg-destructive/5'
+                    : 'border-warning/30 bg-warning/5'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert
+                    className={`h-5 w-5 ${
+                      activeSession.autoSubmitted || (activeSession.warningCount ?? 0) >= 2
+                        ? 'text-destructive'
+                        : 'text-warning'
+                    }`}
+                  />
+                  <span className="font-semibold text-sm text-foreground">
+                    {activeSession.autoSubmitted
+                      ? 'Session Auto-Submitted on Strike 3'
+                      : `Candidate Has ${activeSession.warningCount ?? 0} of ${activeSession.maxWarnings ?? 3} Integrity Warnings`}
+                  </span>
+                </div>
+                <div className="flex gap-1">
+                  {[1, 2, 3].map((st) => (
+                    <div
+                      key={st}
+                      className={`h-2 w-5 rounded-full ${
+                        (activeSession.warningCount ?? 0) >= st
+                          ? (activeSession.warningCount ?? 0) >= 3
+                            ? 'bg-destructive'
+                            : (activeSession.warningCount ?? 0) === 2
+                              ? 'bg-warning'
+                              : 'bg-amber-400'
+                          : 'bg-muted/40'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+              {activeSession.autoSubmissionReason && (
+                <p className="text-xs text-muted-foreground font-mono">
+                  Termination Reason: {activeSession.autoSubmissionReason}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Student, Session & Hardware Telemetry Strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
             <div className="rounded-xl border border-border bg-surface-elevated p-3 space-y-1">
               <p className="text-[11px] font-mono uppercase text-muted-foreground">Camera</p>
               <div className="flex items-center gap-1.5">
@@ -339,6 +390,23 @@ export function CandidateDetailDrawer({
               </p>
               <p className="font-mono text-sm font-semibold text-foreground tabular-nums">
                 {activeSession.trustScore.toFixed(0)}% / {activeSession.riskScore.toFixed(0)}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border bg-surface-elevated p-3 space-y-1">
+              <p className="text-[11px] font-mono uppercase text-muted-foreground">
+                Warnings / Strikes
+              </p>
+              <p
+                className={`font-mono text-sm font-semibold tabular-nums ${
+                  (activeSession.warningCount ?? 0) >= 3
+                    ? 'text-destructive'
+                    : (activeSession.warningCount ?? 0) >= 1
+                      ? 'text-warning'
+                      : 'text-foreground'
+                }`}
+              >
+                {activeSession.warningCount ?? 0} / {activeSession.maxWarnings ?? 3}
               </p>
             </div>
           </div>

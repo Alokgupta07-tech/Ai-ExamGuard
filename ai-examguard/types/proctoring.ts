@@ -3,9 +3,20 @@ import type { EventSeverity } from './database'
 export type ProctorMonitoringEventType =
   | 'FACE_NOT_VISIBLE'
   | 'MULTIPLE_FACES_DETECTED'
+  | 'FACE_OBSTRUCTED'
   | 'CAMERA_DISCONNECTED'
   | 'CAMERA_PERMISSION_DENIED'
+  | 'PHONE_DETECTED'
+  | 'MULTIPLE_DEVICES_DETECTED'
+  | 'OBJECT_DETECTION_UNAVAILABLE'
+  | 'ADDITIONAL_PERSON_DETECTED'
+  | 'HEAD_MOVEMENT_OBSERVED'
+  | 'PROLONGED_OFFSCREEN_GAZE'
+  | 'REPEATED_HEAD_DEVIATION'
+  | 'GAZE_ESTIMATION_UNAVAILABLE'
   | 'AUDIO_ACTIVITY'
+  | 'SPEECH_ACTIVITY_DETECTED'
+  | 'SUSTAINED_SPEECH_ACTIVITY'
   | 'MICROPHONE_DISCONNECTED'
   | 'MICROPHONE_PERMISSION_DENIED'
   | 'TAB_HIDDEN'
@@ -120,6 +131,10 @@ export interface FaceLandmarkMetrics {
   centeredInFrame: boolean
   primaryBox: FaceBoundingBox | null
   estimatedYawOffset: number | null
+  estimatedPitchOffset: number | null
+  estimatedRollDegrees: number | null
+  isGazeAverted: boolean
+  isObstructed: boolean
   processedAtMs: number
 }
 
@@ -140,8 +155,8 @@ export interface ProctorAlertSignal {
   eventType: ProctorMonitoringEventType
   severity: EventSeverity
   confidence: number
-  sustainedDurationMs: number
-  consecutiveFrames: number
+  sustainedDurationMs?: number
+  consecutiveFrames?: number
   reason: string
   details: Record<string, unknown>
 }
@@ -164,6 +179,7 @@ export interface CameraMonitorSnapshot {
   errorMessage: string | null
   modelDelegate: 'GPU' | 'CPU' | null
   metrics: FaceLandmarkMetrics | null
+  objectDetection: ObjectDetectionSnapshot | null
   absenceProgressRatio: number
   multipleFaceProgressRatio: number
   fps: number
@@ -174,6 +190,7 @@ export type RiskCategory = 'NORMAL' | 'REVIEW_SUGGESTED' | 'PRIORITY_REVIEW'
 
 export type EventSourceModule =
   | 'mediapipe_face'
+  | 'object_detector'
   | 'web_audio'
   | 'browser_visibility'
   | 'server_session'
@@ -242,5 +259,73 @@ export interface SessionRiskAssessment {
   evaluatedAt: string
   autoDisqualified: false
 }
+
+export interface DetectedObjectBox {
+  category: 'cell phone' | 'person' | 'laptop' | 'book' | string
+  score: number
+  boundingBox: {
+    originX: number
+    originY: number
+    width: number
+    height: number
+  }
+}
+
+export interface ObjectDetectionSnapshot {
+  status: 'idle' | 'loading' | 'ready' | 'error' | 'unsupported'
+  phoneDetected: boolean
+  personCount: number
+  objects: DetectedObjectBox[]
+  lastDetectedAtMs: number | null
+  sustainedPhoneDurationMs: number
+}
+
+export interface HeadPoseAndGazeMetrics {
+  yaw: number // radians or normalized ratio (-1..1)
+  pitch: number // (-1..1)
+  roll: number // (-1..1)
+  isLookingOffscreen: boolean
+  gazeDeviationRatio: number
+  consecutiveOffscreenFrames: number
+}
+
+export interface SessionWarningState {
+  currentStrike: number
+  maxStrikes: number
+  autoSubmitted: boolean
+  autoSubmissionReason: string | null
+  lastStrikeAtMs: number
+  activeWarningModal: {
+    strikeNumber: number
+    reason: string
+    eventType: ProctorMonitoringEventType
+    timestamp: string
+    isFinal: boolean
+  } | null
+  warningsHistory: {
+    strikeNumber: number
+    eventType: string
+    reason: string
+    occurredAt: string
+  }[]
+}
+
+export interface ExamIntegrityPolicy {
+  id?: string
+  examId: string
+  tenantId: string
+  maxWarnings: number
+  fullscreenRequired: boolean
+  tabSwitchStrike: boolean
+  phoneDetectionStrike: boolean
+  multipleFacesStrike: boolean
+  additionalPersonStrike: boolean
+  audioVadStrike: boolean
+  gazeDeviationStrike: boolean
+  warningCooldownSeconds: number
+  autoSubmissionEnabled: boolean
+  version: number
+}
+
 
 

@@ -79,6 +79,22 @@ export function QuestionStage({
     totalAnsweredCount >= maxAllowedAttempts &&
     !isCurrentAnswered;
 
+  const [navLock, setNavLock] = useState(false);
+
+  const handleNextClick = () => {
+    if (navLock || !hasNext) return;
+    setNavLock(true);
+    setTimeout(() => setNavLock(false), 200);
+    onNext();
+  };
+
+  const handlePreviousClick = () => {
+    if (navLock || !hasPrevious) return;
+    setNavLock(true);
+    setTimeout(() => setNavLock(false), 200);
+    onPrevious();
+  };
+
   const wordCount = useMemo(() => {
     if (!responseText) return 0;
     const words = responseText.trim().split(/\s+/).filter(Boolean);
@@ -331,8 +347,8 @@ export function QuestionStage({
               type="button"
               variant="outline"
               size="sm"
-              onClick={onPrevious}
-              disabled={!hasPrevious}
+              onClick={handlePreviousClick}
+              disabled={!hasPrevious || navLock}
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
               Back
@@ -347,8 +363,8 @@ export function QuestionStage({
             <Button
               type="button"
               size="sm"
-              onClick={onNext}
-              disabled={!hasNext}
+              onClick={handleNextClick}
+              disabled={!hasNext || navLock}
             >
               Next
               <ArrowRight className="h-4 w-4 ml-1" />

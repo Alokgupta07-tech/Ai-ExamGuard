@@ -25,6 +25,8 @@ import {
   evaluateSessionRiskAndCorrelations,
   validateEventTimestamp,
 } from '../lib/proctoring/risk-engine'
+import { WarningPolicyEngine } from '../lib/proctoring/warning-engine'
+import type { ExamIntegrityPolicy } from '../types/proctoring'
 
 test('CSV security: escapes formula injection payloads while preserving negative numbers', () => {
   assert.equal(escapeCsvCell('=cmd|"/C calc"!A0'), `"'=cmd|""/C calc""!A0"`)
@@ -112,6 +114,10 @@ test('Temporal face filter: prevents single-frame false positives and detects su
     centeredInFrame: true,
     primaryBox: null,
     estimatedYawOffset: 0,
+    estimatedPitchOffset: 0,
+    estimatedRollDegrees: 0,
+    isGazeAverted: false,
+    isObstructed: false,
     processedAtMs: 1000,
   })
   assert.equal(baseline.faceStatus, 'present')
@@ -124,6 +130,10 @@ test('Temporal face filter: prevents single-frame false positives and detects su
     centeredInFrame: false,
     primaryBox: null,
     estimatedYawOffset: null,
+    estimatedPitchOffset: null,
+    estimatedRollDegrees: null,
+    isGazeAverted: false,
+    isObstructed: false,
     processedAtMs: 2000,
   })
   assert.equal(singleDrop.signals.length, 0)
@@ -137,6 +147,10 @@ test('Temporal face filter: prevents single-frame false positives and detects su
       centeredInFrame: false,
       primaryBox: null,
       estimatedYawOffset: null,
+      estimatedPitchOffset: null,
+      estimatedRollDegrees: null,
+      isGazeAverted: false,
+      isObstructed: false,
       processedAtMs: 2000 + i * 800,
     })
     if (res.signals.some((s) => s.eventType === 'FACE_NOT_VISIBLE')) {
@@ -154,6 +168,10 @@ test('Temporal face filter: prevents single-frame false positives and detects su
       centeredInFrame: true,
       primaryBox: null,
       estimatedYawOffset: 0,
+      estimatedPitchOffset: 0,
+      estimatedRollDegrees: 0,
+      isGazeAverted: false,
+      isObstructed: false,
       processedAtMs: 10_000 + i * 600,
     })
     if (res.signals.some((s) => s.eventType === 'MULTIPLE_FACES_DETECTED')) {
@@ -305,4 +323,51 @@ test('Risk engine & timestamp validation: coalesces episodes, detects correlatio
   assert.equal(correlated.assessment.riskCategory, 'PRIORITY_REVIEW')
   assert.equal(correlated.assessment.autoDisqualified, false)
   assert.ok(correlated.assessment.summaryExplanation.length > 20)
+})
+
+test('WarningPolicyEngine: classifies strike eligibility and preserves technical incidents as non-strikes', () => {
+  const policy: ExamIntegrityPolicy = {
+    id: 'p-1',
+    examId: 'ex-1',
+    tenantId: 'tenant-1',
+    maxWarnings: 3,
+    warningCooldownSeconds: 20,
+    autoSubmissionEnabled: true,
+    phoneDetectionStrike: true,
+    additionalPersonStrike: true,
+    multipleFacesStrike: true,
+    tabSwitchStrike: true,
+    fullscreenRequired: true,
+    audioVadStrike: true,
+    gazeDeviationStrike: true,
+    version: 1,
+  }
+
+  // Misconduct violations qualify for strikes
+  assert.equal(WarningPolicyEngine.isEventEligibleForStrike('PHONE_DETECTED', policy), true)
+  assert.equal(WarningPolicyEngine.isEventEligibleForStrike('ADDITIONAL_PERSON_DETECTED', policy), true)
+  assert.equal(WarningPolicyEngine.isEventEligibleForStrike('MULTIPLE_FACES_DETECTED', policy), true)
+  assert.equal(WarningPolicyEngine.isEventEligibleForStrike('TAB_HIDDEN', policy), true)
+  assert.equal(WarningPolicyEngine.isEventEligibleForStrike('SUSTAINED_SPEECH_ACTIVITY', policy), true)
+
+  // Technical failures MUST NOT be treated as misconduct strikes
+  assert.equal(WarningPolicyEngine.isEventEligibleForStrike('CAMERA_DISCONNECTED', policy), false)
+  assert.equal(WarningPolicyEngine.isEventEligibleForStrike('CAMERA_PERMISSION_DENIED', policy), false)
+  assert.equal(WarningPolicyEngine.isEventEligibleForStrike('MICROPHONE_DISCONNECTED', policy), false)
+  assert.equal(WarningPolicyEngine.isEventEligibleForStrike('MICROPHONE_PERMISSION_DENIED', policy), false)
+  assert.equal(WarningPolicyEngine.isEventEligibleForStrike('OBJECT_DETECTION_UNAVAILABLE', policy), false)
+
+  // Warning text progression
+  const w1 = WarningPolicyEngine.formatWarningMessage(1, 3, 'PHONE_DETECTED', 'Mobile phone detected')
+  assert.ok(w1.title.includes('Warning 1 of 3'))
+  assert.ok(w1.title.includes('Examination Integrity Notice'))
+  assert.ok(w1.message.includes('examination integrity event has been detected'))
+
+  const w2 = WarningPolicyEngine.formatWarningMessage(2, 3, 'TAB_HIDDEN', 'Tab switched')
+  assert.ok(w2.title.includes('Warning 2 of 3'))
+  assert.ok(w2.title.includes('Final Warning'))
+
+  const w3 = WarningPolicyEngine.formatWarningMessage(3, 3, 'PHONE_DETECTED', 'Mobile phone detected')
+  assert.ok(w3.title.includes('Automatically Submitted'))
+  assert.ok(w3.message.includes('safely recorded'))
 })

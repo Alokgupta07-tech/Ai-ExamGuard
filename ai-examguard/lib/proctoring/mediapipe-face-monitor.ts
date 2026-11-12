@@ -92,6 +92,10 @@ export function extractLandmarkMetrics(
       centeredInFrame: false,
       primaryBox: null,
       estimatedYawOffset: null,
+      estimatedPitchOffset: null,
+      estimatedRollDegrees: null,
+      isGazeAverted: false,
+      isObstructed: false,
       processedAtMs,
     }
   }
@@ -123,19 +127,62 @@ export function extractLandmarkMetrics(
     centerY: Number(centerY.toFixed(3)),
   }
 
-  // MediaPipe FaceMesh nose tip (#1), left cheek/temple (#234), right cheek/temple (#454)
+  // MediaPipe FaceMesh landmarks:
+  // Nose: 1, Left cheek/temple: 234, Right cheek/temple: 454, Forehead: 10, Chin: 152
   let estimatedYawOffset: number | null = null
-  if (landmarkCount > 454 && width > 0.01) {
+  let estimatedPitchOffset: number | null = null
+  let estimatedRollDegrees: number | null = null
+  let isGazeAverted = false
+
+  if (landmarkCount > 454 && width > 0.01 && height > 0.01) {
     const nose = primary[1]
     const leftEdge = primary[234]
     const rightEdge = primary[454]
+    const forehead = primary[10]
+    const chin = primary[152]
+
     if (nose && leftEdge && rightEdge) {
       const faceMidX = (leftEdge.x + rightEdge.x) / 2
-      estimatedYawOffset = Number(
-        ((nose.x - faceMidX) / Math.max(0.05, Math.abs(rightEdge.x - leftEdge.x))).toFixed(3)
-      )
+      const spanX = Math.max(0.05, Math.abs(rightEdge.x - leftEdge.x))
+      estimatedYawOffset = Number(((nose.x - faceMidX) / spanX).toFixed(3))
+
+      const rollRad = Math.atan2(rightEdge.y - leftEdge.y, rightEdge.x - leftEdge.x)
+      estimatedRollDegrees = Number((rollRad * (180 / Math.PI)).toFixed(1))
+    }
+
+    if (nose && forehead && chin) {
+      const faceMidY = (forehead.y + chin.y) / 2
+      const spanY = Math.max(0.05, Math.abs(chin.y - forehead.y))
+      estimatedPitchOffset = Number(((nose.y - faceMidY) / spanY).toFixed(3))
+    }
+
+    // Iris gaze checking if 468+ landmarks available
+    if (landmarkCount > 473) {
+      const leftIris = primary[468]
+      const rightIris = primary[473]
+      const leftEyeOuter = primary[33]
+      const leftEyeInner = primary[133]
+      if (leftIris && leftEyeOuter && leftEyeInner) {
+        const eyeW = Math.abs(leftEyeInner.x - leftEyeOuter.x)
+        if (eyeW > 0.01) {
+          const irisPos = (leftIris.x - Math.min(leftEyeOuter.x, leftEyeInner.x)) / eyeW
+          if (irisPos < 0.22 || irisPos > 0.78) {
+            isGazeAverted = true
+          }
+        }
+      }
+    }
+
+    // Gaze averted from extreme yaw or pitch (e.g. looking down at desk or sideways)
+    if (
+      (estimatedYawOffset !== null && Math.abs(estimatedYawOffset) > 0.32) ||
+      (estimatedPitchOffset !== null && (estimatedPitchOffset > 0.28 || estimatedPitchOffset < -0.25))
+    ) {
+      isGazeAverted = true
     }
   }
+
+  const isObstructed = landmarkCount > 0 && (landmarkCount < 350 || width < 0.08 || height < 0.08)
 
   const centeredInFrame =
     centerX >= 0.2 && centerX <= 0.8 && centerY >= 0.15 && centerY <= 0.85
@@ -146,6 +193,10 @@ export function extractLandmarkMetrics(
     centeredInFrame,
     primaryBox,
     estimatedYawOffset,
+    estimatedPitchOffset,
+    estimatedRollDegrees,
+    isGazeAverted,
+    isObstructed,
     processedAtMs,
   }
 }

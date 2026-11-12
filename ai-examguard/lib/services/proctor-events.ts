@@ -17,6 +17,7 @@ import {
   type RiskInputEvent,
 } from '@/lib/proctoring/risk-engine'
 import { extractRequestMeta } from '@/lib/utils/request-meta'
+import { WarningPolicyEngine, type EvaluateWarningResult } from '@/lib/proctoring/warning-engine'
 import {
   assertNoRawFramePayload,
   eventReviewUpdateSchema,
@@ -49,9 +50,20 @@ const DEDUP_WINDOW_MS = 10_000
 const LEGACY_ENUM_FALLBACK: Record<ProctorMonitoringEventType, EventType> = {
   FACE_NOT_VISIBLE: 'NO_FACE_DETECTED',
   MULTIPLE_FACES_DETECTED: 'MULTIPLE_FACES_DETECTED',
+  FACE_OBSTRUCTED: 'FACE_OCCLUDED',
   CAMERA_DISCONNECTED: 'FACE_OCCLUDED',
   CAMERA_PERMISSION_DENIED: 'FACE_OCCLUDED',
+  PHONE_DETECTED: 'PHONE_DETECTED',
+  MULTIPLE_DEVICES_DETECTED: 'MULTIPLE_DEVICES_DETECTED',
+  OBJECT_DETECTION_UNAVAILABLE: 'OBJECT_DETECTION_UNAVAILABLE',
+  ADDITIONAL_PERSON_DETECTED: 'ADDITIONAL_PERSON_DETECTED',
+  HEAD_MOVEMENT_OBSERVED: 'HEAD_MOVEMENT_OBSERVED',
+  PROLONGED_OFFSCREEN_GAZE: 'PROLONGED_OFFSCREEN_GAZE',
+  REPEATED_HEAD_DEVIATION: 'REPEATED_HEAD_DEVIATION',
+  GAZE_ESTIMATION_UNAVAILABLE: 'GAZE_ESTIMATION_UNAVAILABLE',
   AUDIO_ACTIVITY: 'AUDIO_ANOMALY',
+  SPEECH_ACTIVITY_DETECTED: 'SPEECH_ACTIVITY_DETECTED',
+  SUSTAINED_SPEECH_ACTIVITY: 'SUSTAINED_SPEECH_ACTIVITY',
   MICROPHONE_DISCONNECTED: 'AUDIO_ANOMALY',
   MICROPHONE_PERMISSION_DENIED: 'AUDIO_ANOMALY',
   TAB_HIDDEN: 'TAB_SWITCH',
@@ -72,6 +84,7 @@ export interface RecordProctorEventResult {
   riskAssessment?: SessionRiskAssessment
   realtimeNotified: boolean
   advisoryOnly: true
+  warningEvaluation?: EvaluateWarningResult
 }
 
 async function emitRealtimeMonitoringNotification(
@@ -692,6 +705,18 @@ export class ProctorEventService {
       finalizedAssessment
     )
 
+    // Evaluate 3-strike warning policy for active student exam sessions
+    const warningEvaluation = await WarningPolicyEngine.evaluateAndApplyStrike({
+      sessionId: sessionRow.id,
+      examId,
+      studentId: actor.userId,
+      tenantId: actor.tenantId,
+      eventType: input.eventType,
+      reason: riskEval.incomingEventExplanation,
+      confidence: sanitizedConfidence,
+      details: enrichedDetails,
+    }).catch(() => undefined)
+
     return {
       recorded: true,
       deduplicated: false,
@@ -704,6 +729,7 @@ export class ProctorEventService {
       riskAssessment: finalizedAssessment,
       realtimeNotified,
       advisoryOnly: true,
+      warningEvaluation,
     }
   }
 
@@ -1012,14 +1038,27 @@ export class ProctorEventService {
 
     const actor = await requireRoleActor(['invigilator', 'instructor', 'admin'])
 
-    const { data: sessionRow, error: sessErr } = await supabaseAdmin
+    let { data: sessionRow, error: sessErr } = await supabaseAdmin
       .from('exam_sessions')
       .select(
-        'id, exam_id, student_id, tenant_id, status, started_at, submitted_at, score, trust_score, hardware_status, created_at'
+        'id, exam_id, student_id, tenant_id, status, started_at, submitted_at, score, trust_score, hardware_status, warning_count, max_warnings, auto_submitted, auto_submission_reason, created_at'
       )
       .eq('id', sessionId)
       .eq('tenant_id', actor.tenantId)
       .maybeSingle()
+
+    if (isMissingColumnError(sessErr)) {
+      const fallback = await supabaseAdmin
+        .from('exam_sessions')
+        .select(
+          'id, exam_id, student_id, tenant_id, status, started_at, submitted_at, score, trust_score, hardware_status, created_at'
+        )
+        .eq('id', sessionId)
+        .eq('tenant_id', actor.tenantId)
+        .maybeSingle()
+      sessionRow = fallback.data as typeof sessionRow
+      sessErr = fallback.error
+    }
 
     if (sessErr || !sessionRow) {
       throw new ExamSessionError('Candidate session not found in your institution.', 404, 'SESSION_NOT_FOUND')
@@ -1151,6 +1190,10 @@ export class ProctorEventService {
       riskAssessment: evalRes.assessment,
       hardwareStatus:
         (sessionRow.hardware_status as SessionView['hardwareStatus'] | null) ?? {},
+      warningCount: ((sessionRow as unknown as Record<string, unknown>).warning_count as number | null) ?? 0,
+      maxWarnings: ((sessionRow as unknown as Record<string, unknown>).max_warnings as number | null) ?? 3,
+      autoSubmitted: Boolean((sessionRow as unknown as Record<string, unknown>).auto_submitted),
+      autoSubmissionReason: ((sessionRow as unknown as Record<string, unknown>).auto_submission_reason as string | null) ?? null,
       createdAt: sessionRow.created_at,
     }
 

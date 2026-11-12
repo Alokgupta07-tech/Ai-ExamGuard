@@ -112,6 +112,10 @@ export interface SessionView {
     microphone?: boolean;
     fullscreen?: boolean;
   };
+  warningCount?: number;
+  maxWarnings?: number;
+  autoSubmitted?: boolean;
+  autoSubmissionReason?: string | null;
   createdAt: string;
 }
 

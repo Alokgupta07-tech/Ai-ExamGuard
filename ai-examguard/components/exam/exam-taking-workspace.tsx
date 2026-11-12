@@ -16,6 +16,7 @@ import { SubmissionConfirmation } from '@/components/exam/submission-confirmatio
 import { CameraMonitorPanel } from '@/components/proctoring/camera-monitor-panel';
 import { AudioMonitorPanel } from '@/components/proctoring/audio-monitor-panel';
 import { BrowserMonitorStatus } from '@/components/proctoring/browser-monitor-status';
+import { UnifiedProctorPanel } from '@/components/proctoring/unified-proctor-panel';
 import { useCameraProctor } from '@/hooks/use-camera-proctor';
 import { useAudioProctor } from '@/hooks/use-audio-proctor';
 import { useBrowserMonitor } from '@/hooks/use-browser-monitor';
@@ -81,6 +82,16 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
   const [answersMap, setAnswersMap] = useState<Record<string, string | null>>({});
   const [flaggedSet, setFlaggedSet] = useState<Set<string>>(new Set());
 
+  // Integrity & Warning State (Three-Strike System)
+  const [warningCount, setWarningCount] = useState(0);
+  const [activeWarningModal, setActiveWarningModal] = useState<{
+    strikeNumber: number;
+    maxStrikes: number;
+    title: string;
+    message: string;
+    autoSubmitted: boolean;
+  } | null>(null);
+
   // Timing state
   const clockOffsetRef = useRef<number>(0);
   const expiresAtMsRef = useRef<number>(0);
@@ -113,6 +124,28 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
   const requireAudioForSession = paper?.settings?.require_audio !== false;
   const requireFullscreenForSession = paper?.settings?.require_fullscreen !== false;
 
+  const executeSubmitRef = useRef<(isAuto: boolean) => Promise<void>>(async () => {});
+
+  const handleWarningIssued = useCallback((warning: {
+    strikeNumber: number;
+    maxStrikes: number;
+    warningTitle?: string | null;
+    warningMessage?: string | null;
+    autoSubmitted: boolean;
+  }) => {
+    setWarningCount(warning.strikeNumber);
+    setActiveWarningModal({
+      strikeNumber: warning.strikeNumber,
+      maxStrikes: warning.maxStrikes,
+      title: warning.warningTitle || `Warning ${warning.strikeNumber} of ${warning.maxStrikes}`,
+      message: warning.warningMessage || 'An examination integrity event was detected.',
+      autoSubmitted: warning.autoSubmitted,
+    });
+    if (warning.autoSubmitted) {
+      void executeSubmitRef.current(true);
+    }
+  }, []);
+
   const {
     snapshot: proctorSnapshot,
     attachVideoElement,
@@ -124,6 +157,7 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
     context: 'active_exam',
     enabled: Boolean(session && !receipt && requireCameraForSession),
     reportEvents: !isSubmitting && !receipt,
+    onWarningIssued: handleWarningIssued,
   });
 
   const {
@@ -136,6 +170,7 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
     context: 'active_exam',
     enabled: Boolean(session && !receipt && requireAudioForSession),
     reportEvents: !isSubmitting && !receipt,
+    onWarningIssued: handleWarningIssued,
   });
 
   const {
@@ -241,6 +276,10 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
     },
     [clearTimers, examId, flaggedSet, isSubmitting, receipt, stopAudioMonitoring, stopMonitoring]
   );
+
+  useEffect(() => {
+    executeSubmitRef.current = executeSubmit;
+  }, [executeSubmit]);
 
   const flushQueueRef = useRef<() => Promise<void>>(async () => {});
 
@@ -605,9 +644,16 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
     void syncProgressMeta(next, question.id);
   }, [currentIndex, flaggedSet, paper, receipt, syncProgressMeta]);
 
+  const isNavigatingRef = useRef(false);
   const navigateToIndex = useCallback(
     (idx: number) => {
       if (!paper || idx < 0 || idx >= paper.questions.length) return;
+      if (isNavigatingRef.current) return;
+      isNavigatingRef.current = true;
+      setTimeout(() => {
+        isNavigatingRef.current = false;
+      }, 180);
+
       setCurrentIndex(idx);
       const q = paper.questions[idx];
       if (q) {
@@ -768,40 +814,32 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
 
         <main className="flex-1 min-w-0 px-4 py-6 sm:px-8 sm:py-8">
           {currentQuestion ? (
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div
-                key={currentQuestion.id}
-                initial={prefersReducedMotion ? false : { opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={prefersReducedMotion ? undefined : { opacity: 0, x: -10 }}
-                transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <QuestionStage
-                  question={currentQuestion}
-                  questionNumber={currentIndex + 1}
-                  totalQuestions={paper.questions.length}
-                  selectedOptionId={
-                    currentQuestion.options && currentQuestion.options.length > 0
-                      ? answersMap[currentQuestion.id] ?? null
-                      : null
-                  }
-                  responseText={answersMap[currentQuestion.id] ?? ''}
-                  isFlagged={flaggedSet.has(currentQuestion.id)}
-                  negativeMarking={paper.negativeMarking}
-                  onSelectOption={handleSelectOption}
-                  onChangeResponseText={handleChangeResponseText}
-                  onToggleFlag={handleToggleFlag}
-                  onPrevious={() => navigateToIndex(currentIndex - 1)}
-                  onNext={() => navigateToIndex(currentIndex + 1)}
-                  onFirst={() => navigateToIndex(0)}
-                  onLast={() => navigateToIndex(paper.questions.length - 1)}
-                  hasPrevious={currentIndex > 0}
-                  hasNext={currentIndex < paper.questions.length - 1}
-                  maxAllowedAttempts={maxAllowedAttempts}
-                  totalAnsweredCount={answeredCount}
-                />
-              </motion.div>
-            </AnimatePresence>
+            <div key={currentQuestion.id} className="transition-opacity duration-150">
+              <QuestionStage
+                question={currentQuestion}
+                questionNumber={currentIndex + 1}
+                totalQuestions={paper.questions.length}
+                selectedOptionId={
+                  currentQuestion.options && currentQuestion.options.length > 0
+                    ? answersMap[currentQuestion.id] ?? null
+                    : null
+                }
+                responseText={answersMap[currentQuestion.id] ?? ''}
+                isFlagged={flaggedSet.has(currentQuestion.id)}
+                negativeMarking={paper.negativeMarking}
+                onSelectOption={handleSelectOption}
+                onChangeResponseText={handleChangeResponseText}
+                onToggleFlag={handleToggleFlag}
+                onPrevious={() => navigateToIndex(currentIndex - 1)}
+                onNext={() => navigateToIndex(currentIndex + 1)}
+                onFirst={() => navigateToIndex(0)}
+                onLast={() => navigateToIndex(paper.questions.length - 1)}
+                hasPrevious={currentIndex > 0}
+                hasNext={currentIndex < paper.questions.length - 1}
+                maxAllowedAttempts={maxAllowedAttempts}
+                totalAnsweredCount={answeredCount}
+              />
+            </div>
           ) : (
             <ErrorState
               title="No Questions Loaded"
@@ -810,28 +848,21 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
           )}
         </main>
 
-        <div className="w-full lg:w-64 lg:shrink-0 border-t lg:border-t-0 lg:border-l border-border bg-sidebar/50 p-3 sm:p-4">
+        <div className="w-full lg:w-72 lg:shrink-0 border-t lg:border-t-0 lg:border-l border-border bg-sidebar/50 p-3 sm:p-4">
           <div className="lg:sticky lg:top-20 space-y-3">
-            {requireCameraForSession && (
-              <CameraMonitorPanel
-                variant="compact"
-                snapshot={proctorSnapshot}
-                attachVideoElement={attachVideoElement}
-                onRetryCamera={retryCamera}
-                requireCamera={requireCameraForSession}
-              />
-            )}
-            {requireAudioForSession && (
-              <AudioMonitorPanel
-                variant="compact"
-                snapshot={audioSnapshot}
-                onRetryAudio={retryAudio}
-                requireAudio={requireAudioForSession}
-              />
-            )}
-            <BrowserMonitorStatus
-              snapshot={browserSnapshot}
+            <UnifiedProctorPanel
+              cameraSnapshot={proctorSnapshot}
+              audioSnapshot={audioSnapshot}
+              browserSnapshot={browserSnapshot}
+              warningCount={warningCount}
+              maxWarnings={3}
+              requireCamera={requireCameraForSession}
+              requireAudio={requireAudioForSession}
               requireFullscreen={requireFullscreenForSession}
+              attachVideoElement={attachVideoElement}
+              onRetryCamera={retryCamera}
+              onRetryAudio={retryAudio}
+              onRequestFullscreen={requestFullscreen}
             />
           </div>
         </div>
@@ -940,6 +971,49 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
               {submitError}
             </div>
           )}
+        </div>
+      </Modal>
+
+      {/* Official Three-Strike Warning Dialog */}
+      <Modal
+        open={Boolean(activeWarningModal)}
+        onClose={() => {
+          if (!activeWarningModal?.autoSubmitted) {
+            setActiveWarningModal(null);
+          }
+        }}
+        title={activeWarningModal?.title || 'Examination Integrity Warning'}
+        description="Official proctoring policy compliance notice."
+        size="md"
+        footer={
+          <div className="flex items-center justify-end w-full">
+            <Button
+              type="button"
+              variant={activeWarningModal?.autoSubmitted ? 'secondary' : 'default'}
+              onClick={() => setActiveWarningModal(null)}
+            >
+              {activeWarningModal?.autoSubmitted
+                ? 'View Examination Receipt'
+                : 'I Understand & Return to Exam'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4 py-2">
+          <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 flex items-start gap-3 text-destructive">
+            <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-semibold text-sm">
+                Strike {activeWarningModal?.strikeNumber} of {activeWarningModal?.maxStrikes}
+              </p>
+              <p className="text-xs leading-relaxed text-foreground">
+                {activeWarningModal?.message}
+              </p>
+            </div>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            All policy integrity events are cryptographically timestamped and logged for post-examination faculty review.
+          </p>
         </div>
       </Modal>
     </div>

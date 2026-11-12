@@ -246,6 +246,12 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
               Edit Wizard
             </Link>
           </Button>
+          <Button asChild size="xs" variant="outline">
+            <Link href={`/faculty/exams/${e.id}/policy`}>
+              <ShieldAlert className="h-3 w-3" />
+              Policy
+            </Link>
+          </Button>
           {e.status === 'draft' && (
             <>
               <Button size="xs" variant="outline" onClick={() => handleStatusChange(e.id, 'published')}>

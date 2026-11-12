@@ -64,3 +64,4 @@
 2. **5-of-7 Attempt Enforcement:** When 5 answers are populated, remaining questions are locked from input until an existing answer is cleared.
 3. **Continuous Auto-Save:** Queued locally in `localStorage` outbox and flushed via micro-batch PUT requests to `/api/student/exams/[examId]/answers`.
 4. **Proctoring Anomaly Stream:** WebAssembly face landmark analysis correctly raises `NO_FACE_DETECTED` or `MULTIPLE_FACES_DETECTED` signals to invigilator live stream without streaming raw video.
+

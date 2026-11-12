@@ -317,10 +317,22 @@ async function fetchTenantAcademicData(tenantId: string, courseFilterIds?: strin
       ? supabaseAdmin
           .from('exam_sessions')
           .select(
-            'id, exam_id, student_id, tenant_id, status, started_at, submitted_at, score, trust_score, hardware_status, created_at'
+            'id, exam_id, student_id, tenant_id, status, started_at, submitted_at, score, trust_score, hardware_status, warning_count, max_warnings, auto_submitted, auto_submission_reason, created_at'
           )
           .in('exam_id', examIds)
           .order('created_at', { ascending: false })
+          .then(async (res) => {
+            if (res.error) {
+              return supabaseAdmin
+                .from('exam_sessions')
+                .select(
+                  'id, exam_id, student_id, tenant_id, status, started_at, submitted_at, score, trust_score, hardware_status, created_at'
+                )
+                .in('exam_id', examIds)
+                .order('created_at', { ascending: false });
+            }
+            return res;
+          })
       : Promise.resolve({ data: [] }),
   ]);
 
@@ -347,6 +359,10 @@ async function fetchTenantAcademicData(tenantId: string, courseFilterIds?: strin
     score: number | null;
     trust_score: number;
     hardware_status: { camera?: boolean; microphone?: boolean; fullscreen?: boolean } | null;
+    warning_count?: number | null;
+    max_warnings?: number | null;
+    auto_submitted?: boolean | null;
+    auto_submission_reason?: string | null;
     created_at: string;
   }[];
 
@@ -587,6 +603,10 @@ async function fetchTenantAcademicData(tenantId: string, courseFilterIds?: strin
       riskScore: assessment?.riskScore ?? 0,
       riskAssessment: assessment,
       hardwareStatus: s.hardware_status || {},
+      warningCount: s.warning_count ?? 0,
+      maxWarnings: s.max_warnings ?? 3,
+      autoSubmitted: Boolean(s.auto_submitted),
+      autoSubmissionReason: s.auto_submission_reason ?? null,
       createdAt: s.created_at,
     };
   });

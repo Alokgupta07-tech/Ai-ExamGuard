@@ -134,3 +134,4 @@ Different pages referenced `"Demo University"`, `"Test University"`, and `"SRM U
 | **Problem C** | Publish Mid-Sem written exam with 0 MCQs | Checks pass; exam published without requiring MCQ answer keys |
 | **Problem D** | View dashboard tables on 390×844 viewport | Renders responsive card list; 0px horizontal clipping |
 | **Problem E** | Check branding across all 4 roles | Consistently displays `SRM University–AP` across all headers |
+

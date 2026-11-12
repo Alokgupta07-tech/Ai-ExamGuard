@@ -212,3 +212,4 @@ FOR EACH ROW
 EXECUTE FUNCTION public.handle_auth_user_created();
 
 COMMENT ON FUNCTION public.handle_auth_user_created IS 'Automatically and idempotently provisions user profile and default tenant membership';
+

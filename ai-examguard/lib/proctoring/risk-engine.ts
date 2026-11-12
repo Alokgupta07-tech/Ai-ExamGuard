@@ -123,16 +123,31 @@ export function resolveAuthoritativeSourceModule(
 ): EventSourceModule {
   const normalized = normalizeEventTypeName(eventType)
   if (
+    normalized === 'PHONE_DETECTED' ||
+    normalized === 'MULTIPLE_DEVICES_DETECTED' ||
+    normalized === 'OBJECT_DETECTION_UNAVAILABLE' ||
+    normalized === 'ADDITIONAL_PERSON_DETECTED'
+  ) {
+    return 'object_detector'
+  }
+  if (
     normalized === 'FACE_NOT_VISIBLE' ||
     normalized === 'MULTIPLE_FACES_DETECTED' ||
     normalized === 'CAMERA_DISCONNECTED' ||
     normalized === 'CAMERA_PERMISSION_DENIED' ||
-    normalized === 'FACE_OCCLUDED'
+    normalized === 'FACE_OCCLUDED' ||
+    normalized === 'FACE_OBSTRUCTED' ||
+    normalized === 'HEAD_MOVEMENT_OBSERVED' ||
+    normalized === 'PROLONGED_OFFSCREEN_GAZE' ||
+    normalized === 'REPEATED_HEAD_DEVIATION' ||
+    normalized === 'GAZE_ESTIMATION_UNAVAILABLE'
   ) {
     return 'mediapipe_face'
   }
   if (
     normalized === 'AUDIO_ACTIVITY' ||
+    normalized === 'SPEECH_ACTIVITY_DETECTED' ||
+    normalized === 'SUSTAINED_SPEECH_ACTIVITY' ||
     normalized === 'MICROPHONE_DISCONNECTED' ||
     normalized === 'MICROPHONE_PERMISSION_DENIED'
   ) {
@@ -181,6 +196,111 @@ export function deriveAuthoritativeEventSpec(
   const dur = typeof durationMs === 'number' && durationMs >= 0 ? durationMs : 0
 
   switch (canonicalType) {
+    case 'PHONE_DETECTED': {
+      const weight = dur >= 4_000 ? 35 : 28
+      return {
+        canonicalType,
+        sourceModule,
+        severity: 'critical',
+        weight,
+        isEnvironmentalOrTechnical: false,
+        diminishingFactorSet: 'behavioral',
+      }
+    }
+    case 'MULTIPLE_DEVICES_DETECTED': {
+      return {
+        canonicalType,
+        sourceModule,
+        severity: 'high',
+        weight: 25,
+        isEnvironmentalOrTechnical: false,
+        diminishingFactorSet: 'behavioral',
+      }
+    }
+    case 'ADDITIONAL_PERSON_DETECTED': {
+      const weight = dur >= 5_000 ? 26 : 18
+      return {
+        canonicalType,
+        sourceModule,
+        severity: 'high',
+        weight,
+        isEnvironmentalOrTechnical: false,
+        diminishingFactorSet: 'behavioral',
+      }
+    }
+    case 'FACE_OBSTRUCTED': {
+      return {
+        canonicalType,
+        sourceModule,
+        severity: 'medium',
+        weight: 10,
+        isEnvironmentalOrTechnical: false,
+        diminishingFactorSet: 'behavioral',
+      }
+    }
+    case 'PROLONGED_OFFSCREEN_GAZE': {
+      const weight = dur >= 8_000 ? 12 : 6
+      return {
+        canonicalType,
+        sourceModule,
+        severity: dur >= 8_000 ? 'medium' : 'low',
+        weight,
+        isEnvironmentalOrTechnical: false,
+        diminishingFactorSet: 'behavioral',
+      }
+    }
+    case 'HEAD_MOVEMENT_OBSERVED': {
+      return {
+        canonicalType,
+        sourceModule,
+        severity: 'low',
+        weight: 4,
+        isEnvironmentalOrTechnical: false,
+        diminishingFactorSet: 'behavioral',
+      }
+    }
+    case 'REPEATED_HEAD_DEVIATION': {
+      return {
+        canonicalType,
+        sourceModule,
+        severity: 'medium',
+        weight: 14,
+        isEnvironmentalOrTechnical: false,
+        diminishingFactorSet: 'behavioral',
+      }
+    }
+    case 'SPEECH_ACTIVITY_DETECTED': {
+      return {
+        canonicalType,
+        sourceModule,
+        severity: 'medium',
+        weight: 12,
+        isEnvironmentalOrTechnical: false,
+        diminishingFactorSet: 'behavioral',
+      }
+    }
+    case 'SUSTAINED_SPEECH_ACTIVITY': {
+      const weight = dur >= 6_000 ? 22 : 16
+      return {
+        canonicalType,
+        sourceModule,
+        severity: 'high',
+        weight,
+        isEnvironmentalOrTechnical: false,
+        diminishingFactorSet: 'behavioral',
+      }
+    }
+    case 'OBJECT_DETECTION_UNAVAILABLE':
+    case 'GAZE_ESTIMATION_UNAVAILABLE': {
+      return {
+        canonicalType,
+        sourceModule,
+        severity: 'low',
+        weight: 0,
+        isEnvironmentalOrTechnical: true,
+        diminishingFactorSet: 'technical',
+      }
+    }
     case 'MULTIPLE_FACES_DETECTED': {
       const weight = dur >= 8_000 ? 25 : 18
       return {
@@ -349,6 +469,39 @@ export function buildEventExplanation(params: {
 
   let base = ''
   switch (params.canonicalType) {
+    case 'PHONE_DETECTED':
+      base = durStr
+        ? `Mobile phone / cellular device detected in the examination camera frame for ${durStr}.`
+        : 'Mobile phone / cellular device detected in the examination camera frame.'
+      break
+    case 'MULTIPLE_DEVICES_DETECTED':
+      base = 'Multiple electronic devices (secondary laptop/phone/tablet) detected in candidate workspace.'
+      break
+    case 'ADDITIONAL_PERSON_DETECTED':
+      base = durStr
+        ? `Additional person detected in the candidate environment for ${durStr}.`
+        : 'Additional person detected in the candidate environment.'
+      break
+    case 'FACE_OBSTRUCTED':
+      base = 'Candidate face appeared partially obscured or obstructed from camera view.'
+      break
+    case 'PROLONGED_OFFSCREEN_GAZE':
+      base = durStr
+        ? `Candidate attention or gaze remained continuously directed away from screen for ${durStr}.`
+        : 'Prolonged off-screen attention detected via head pose and gaze estimation.'
+      break
+    case 'HEAD_MOVEMENT_OBSERVED':
+      base = 'Noticeable head movement or angle deviation observed in candidate video feed.'
+      break
+    case 'REPEATED_HEAD_DEVIATION':
+      base = 'Repeated head rotation away from the screen observed across multiple sampling intervals.'
+      break
+    case 'SPEECH_ACTIVITY_DETECTED':
+    case 'SUSTAINED_SPEECH_ACTIVITY':
+      base = durStr
+        ? `Sustained human speech activity detected in candidate environment for ${durStr}.`
+        : 'Human speech activity detected via voice activity analysis.'
+      break
     case 'FACE_NOT_VISIBLE':
     case 'FACE_OCCLUDED':
       base = durStr

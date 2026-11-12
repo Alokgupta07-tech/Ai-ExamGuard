@@ -92,3 +92,4 @@ All demonstration accounts share the temporary demo password:
    - Sign in as `admin@examguard-demo.example.com`.
    - Click **"Demo Feedback"** in the admin header or navigate to `/admin/feedback`.
    - Inspect average ratings, feedback sentiment, and suggestions submitted by faculty members during the session.
+

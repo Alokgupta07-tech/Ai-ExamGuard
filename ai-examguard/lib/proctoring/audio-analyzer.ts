@@ -1,6 +1,7 @@
 import type {
   AudioConstraintSupport,
   ProctorAlertSignal,
+  ProctorMonitoringEventType,
   ShortWindowAudioMetrics,
 } from '@/types/proctoring'
 
@@ -235,20 +236,25 @@ export class SustainedAudioActivityFilter {
     let signal: ProctorAlertSignal | null = null
     if (meetsSustained && now - this.lastSignalAtMs >= this.config.alertCooldownMs) {
       this.lastSignalAtMs = now
+      const isVoiceConcentrated = metrics.speechBandEnergyRatio >= 0.58 || metrics.vadSpeechProbability !== null
+      const eventType: ProctorMonitoringEventType = isVoiceConcentrated && elapsed >= 2500
+        ? 'SUSTAINED_SPEECH_ACTIVITY'
+        : 'AUDIO_ACTIVITY'
+
       signal = {
-        eventType: 'AUDIO_ACTIVITY',
-        severity: 'low',
+        eventType,
+        severity: eventType === 'SUSTAINED_SPEECH_ACTIVITY' ? 'high' : 'low',
         confidence: Number(Math.min(0.95, 0.72 + progress * 0.2).toFixed(3)),
         sustainedDurationMs: Math.round(elapsed),
         consecutiveFrames: this.consecutiveElevatedWindows,
         reason:
-          metrics.measurementBasis === 'vad_model'
-            ? `Sustained VAD speech activity detected for ${(elapsed / 1000).toFixed(1)}s`
-            : `Sustained ambient acoustic sound energy (${metrics.dbfs} dBFS) for ${(elapsed / 1000).toFixed(1)}s`,
+          eventType === 'SUSTAINED_SPEECH_ACTIVITY'
+            ? `Sustained human speech activity detected (${Math.round(metrics.speechBandEnergyRatio * 100)}% speech band concentration) for ${(elapsed / 1000).toFixed(1)}s`
+            : `Sustained ambient acoustic sound energy (${metrics.dbfs} dBFS) for ${(elapsed / 1000).toFixed(1)}s (background noise)`,
         details: {
           measurementBasis: metrics.measurementBasis,
           isAcousticEnergyOnly: metrics.measurementBasis === 'acoustic_energy',
-          isSpeechClassified: metrics.vadSpeechProbability !== null,
+          isSpeechClassified: isVoiceConcentrated,
           vadSpeechProbability: metrics.vadSpeechProbability,
           rms: metrics.rms,
           peakRms: Number(this.peakRms.toFixed(4)),

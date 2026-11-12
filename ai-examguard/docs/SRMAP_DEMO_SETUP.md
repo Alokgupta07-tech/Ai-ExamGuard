@@ -70,3 +70,4 @@ In `tenants` and `tenant_settings`:
   - `max_violations_threshold: 5`
   - `face_detection_confidence: 0.65`
   - `audio_rms_threshold_db: -28.0`
+

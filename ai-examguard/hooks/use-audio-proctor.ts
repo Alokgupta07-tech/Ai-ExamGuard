@@ -16,6 +16,7 @@ import type {
   ProctorMonitoringEventType,
   ProctorTelemetryEntry,
 } from '@/types/proctoring'
+import type { EvaluateWarningResult } from '@/lib/proctoring/warning-engine'
 
 export interface UseAudioProctorOptions {
   examId: string
@@ -26,6 +27,7 @@ export interface UseAudioProctorOptions {
   reportEvents?: boolean
   /** Optional asynchronous VAD model loader if speech/non-speech classification is configured */
   loadVadAdapter?: () => Promise<OptionalVadAdapter | null>
+  onWarningIssued?: (warning: EvaluateWarningResult) => void
 }
 
 const ANALYSIS_INTERVAL_MS = 100
@@ -100,6 +102,7 @@ export function useAudioProctor({
   enabled,
   reportEvents = true,
   loadVadAdapter,
+  onWarningIssued,
 }: UseAudioProctorOptions) {
   const [snapshot, setSnapshot] = useState<AudioMonitorSnapshot>(INITIAL_AUDIO_SNAPSHOT)
   const [restartNonce, setRestartNonce] = useState(0)
@@ -114,6 +117,7 @@ export function useAudioProctor({
   const mountedRef = useRef(true)
 
   const reportEventsRef = useRef(reportEvents)
+  const onWarningIssuedRef = useRef(onWarningIssued)
   const sessionIdRef = useRef(sessionId)
   const contextRef = useRef(context)
   const examIdRef = useRef(examId)
@@ -123,11 +127,12 @@ export function useAudioProctor({
 
   useEffect(() => {
     reportEventsRef.current = reportEvents
+    onWarningIssuedRef.current = onWarningIssued
     sessionIdRef.current = sessionId
     contextRef.current = context
     examIdRef.current = examId
     loadVadRef.current = loadVadAdapter
-  }, [reportEvents, sessionId, context, examId, loadVadAdapter])
+  }, [reportEvents, onWarningIssued, sessionId, context, examId, loadVadAdapter])
 
   const sendAudioEvent = useCallback(
     async (payload: {
@@ -188,6 +193,11 @@ export function useAudioProctor({
           recorded?: boolean
           deduplicated?: boolean
           persistedAs?: string | null
+          warningEvaluation?: EvaluateWarningResult
+        }
+
+        if (data?.warningEvaluation?.isStrike && onWarningIssuedRef.current) {
+          onWarningIssuedRef.current(data.warningEvaluation)
         }
 
         if (mountedRef.current) {

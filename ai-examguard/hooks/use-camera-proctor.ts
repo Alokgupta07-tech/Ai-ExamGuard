@@ -5,8 +5,10 @@ import {
   LocalMediaPipeFaceMonitor,
   MediaPipeModelError,
 } from '@/lib/proctoring/mediapipe-face-monitor'
+import { LocalMediaPipeObjectDetector } from '@/lib/proctoring/mediapipe-object-detector'
 import { generateClientEventUuid } from '@/lib/proctoring/client-event'
 import { TemporalProctorFilter } from '@/lib/proctoring/temporal-filter'
+import type { EvaluateWarningResult } from '@/lib/proctoring/warning-engine'
 import type {
   CameraMonitorSnapshot,
   ProctorMonitoringEventType,
@@ -21,6 +23,7 @@ export interface UseCameraProctorOptions {
   enabled: boolean
   /** Disable emitting telemetry events (e.g. once exam submission has started) */
   reportEvents?: boolean
+  onWarningIssued?: (warning: EvaluateWarningResult) => void
 }
 
 const TARGET_FRAME_INTERVAL_MS = 200 // ~5 FPS keeps CPU/GPU overhead low while preserving temporal responsiveness
@@ -32,6 +35,7 @@ const INITIAL_SNAPSHOT: CameraMonitorSnapshot = {
   errorMessage: null,
   modelDelegate: null,
   metrics: null,
+  objectDetection: null,
   absenceProgressRatio: 0,
   multipleFaceProgressRatio: 0,
   fps: 0,
@@ -90,6 +94,7 @@ export function useCameraProctor({
   context,
   enabled,
   reportEvents = true,
+  onWarningIssued,
 }: UseCameraProctorOptions) {
   const [snapshot, setSnapshot] = useState<CameraMonitorSnapshot>(INITIAL_SNAPSHOT)
   const [restartNonce, setRestartNonce] = useState(0)
@@ -97,10 +102,12 @@ export function useCameraProctor({
   const videoElRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const monitorRef = useRef<LocalMediaPipeFaceMonitor | null>(null)
+  const objectDetectorRef = useRef<LocalMediaPipeObjectDetector | null>(null)
   const filterRef = useRef(new TemporalProctorFilter())
   const rafIdRef = useRef<number | null>(null)
   const mountedRef = useRef(true)
   const reportEventsRef = useRef(reportEvents)
+  const onWarningIssuedRef = useRef(onWarningIssued)
   const sessionIdRef = useRef(sessionId)
   const contextRef = useRef(context)
   const examIdRef = useRef(examId)
@@ -109,10 +116,11 @@ export function useCameraProctor({
 
   useEffect(() => {
     reportEventsRef.current = reportEvents
+    onWarningIssuedRef.current = onWarningIssued
     sessionIdRef.current = sessionId
     contextRef.current = context
     examIdRef.current = examId
-  }, [reportEvents, sessionId, context, examId])
+  }, [reportEvents, onWarningIssued, sessionId, context, examId])
 
   const sendMonitoringEvent = useCallback(
     async (payload: {
@@ -167,6 +175,11 @@ export function useCameraProctor({
           recorded?: boolean
           deduplicated?: boolean
           persistedAs?: string | null
+          warningEvaluation?: EvaluateWarningResult
+        }
+
+        if (data?.warningEvaluation?.isStrike && onWarningIssuedRef.current) {
+          onWarningIssuedRef.current(data.warningEvaluation)
         }
 
         if (mountedRef.current) {
@@ -216,6 +229,10 @@ export function useCameraProctor({
     if (monitorRef.current) {
       monitorRef.current.dispose()
       monitorRef.current = null
+    }
+    if (objectDetectorRef.current) {
+      objectDetectorRef.current.dispose()
+      objectDetectorRef.current = null
     }
     filterRef.current.reset()
   }, [])
@@ -341,6 +358,15 @@ export function useCameraProctor({
           return null
         })
 
+      // Start Object Detector concurrently for mobile phone & additional person detection
+      LocalMediaPipeObjectDetector.create().then((detector) => {
+        if (cancelled) {
+          detector?.dispose()
+          return
+        }
+        objectDetectorRef.current = detector
+      }).catch(() => undefined)
+
       let stream: MediaStream
       try {
         stream = await navigator.mediaDevices.getUserMedia({
@@ -426,6 +452,7 @@ export function useCameraProctor({
       if (cancelled || !monitor || !mountedRef.current) return
 
       let lastProcessedAt = 0
+      let lastObjectProcessedAt = 0
       let lastVideoTime = -1
       let fpsFrames = 0
       let fpsWindowStart = performance.now()
@@ -445,10 +472,10 @@ export function useCameraProctor({
           videoEl &&
           !document.hidden &&
           videoEl.readyState >= 2 &&
-          videoEl.videoWidth > 0 &&
-          now - lastProcessedAt >= TARGET_FRAME_INTERVAL_MS
+          videoEl.videoWidth > 0
         ) {
-          if (videoEl.currentTime !== lastVideoTime) {
+          // 1. Face & Head-Pose Monitoring (every TARGET_FRAME_INTERVAL_MS = 200ms)
+          if (now - lastProcessedAt >= TARGET_FRAME_INTERVAL_MS && videoEl.currentTime !== lastVideoTime) {
             lastVideoTime = videoEl.currentTime
             lastProcessedAt = now
 
@@ -477,6 +504,23 @@ export function useCameraProctor({
               }))
             } catch {
               // Single-frame inference hiccup; allow next frame to recover cleanly
+            }
+          }
+
+          // 2. Object & Mobile Phone Detection (every 320ms to conserve system resources)
+          if (objectDetectorRef.current && now - lastObjectProcessedAt >= 320) {
+            lastObjectProcessedAt = now
+            try {
+              const objResult = objectDetectorRef.current.detectFrame(videoEl, now)
+              for (const sig of objResult.signals) {
+                void sendMonitoringEvent(sig)
+              }
+              setSnapshot((prev) => ({
+                ...prev,
+                objectDetection: objResult.snapshot,
+              }))
+            } catch {
+              // Soft ignore
             }
           }
         }

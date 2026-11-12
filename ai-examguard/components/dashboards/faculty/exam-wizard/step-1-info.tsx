@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Calendar, Clock, FileText, Loader2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,7 +42,7 @@ function defaultWindowValues() {
  * Wizard Step 1: Examination information (Title, Course, Description, Instructions, Date, Start/End Time).
  */
 export function Step1Info({ courses, exam, onSaved }: Step1InfoProps) {
-  const defaults = defaultWindowValues();
+  const defaults = useMemo(() => defaultWindowValues(), []);
 
   const [courseId, setCourseId] = useState(exam?.courseId || courses[0]?.id || '');
   const [title, setTitle] = useState(exam?.title || '');
@@ -141,6 +141,8 @@ export function Step1Info({ courses, exam, onSaved }: Step1InfoProps) {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="CS-301 Midterm Assessment"
+            autoComplete="off"
+            spellCheck={false}
             required
           />
           {fieldErrors.title && (

@@ -31,9 +31,23 @@ export class TemporalProctorFilter {
   private consecutiveAbsenceFrames = 0
   private multipleFaceStartedAtMs: number | null = null
   private consecutiveMultipleFaceFrames = 0
-  private lastSignalAtMs: Record<'FACE_NOT_VISIBLE' | 'MULTIPLE_FACES_DETECTED', number> = {
+  private gazeAvertedStartedAtMs: number | null = null
+  private consecutiveGazeFrames = 0
+  private obstructedStartedAtMs: number | null = null
+  private consecutiveObstructedFrames = 0
+  private lastYaw: number | null = null
+  private lastSignalAtMs: {
+    FACE_NOT_VISIBLE: number
+    MULTIPLE_FACES_DETECTED: number
+    PROLONGED_OFFSCREEN_GAZE: number
+    HEAD_MOVEMENT_OBSERVED: number
+    FACE_OBSTRUCTED: number
+  } = {
     FACE_NOT_VISIBLE: -Infinity,
     MULTIPLE_FACES_DETECTED: -Infinity,
+    PROLONGED_OFFSCREEN_GAZE: -Infinity,
+    HEAD_MOVEMENT_OBSERVED: -Infinity,
+    FACE_OBSTRUCTED: -Infinity,
   }
 
   constructor(config: Partial<TemporalFilterConfig> = {}) {
@@ -46,9 +60,17 @@ export class TemporalProctorFilter {
     this.consecutiveAbsenceFrames = 0
     this.multipleFaceStartedAtMs = null
     this.consecutiveMultipleFaceFrames = 0
+    this.gazeAvertedStartedAtMs = null
+    this.consecutiveGazeFrames = 0
+    this.obstructedStartedAtMs = null
+    this.consecutiveObstructedFrames = 0
+    this.lastYaw = null
     this.lastSignalAtMs = {
       FACE_NOT_VISIBLE: -Infinity,
       MULTIPLE_FACES_DETECTED: -Infinity,
+      PROLONGED_OFFSCREEN_GAZE: -Infinity,
+      HEAD_MOVEMENT_OBSERVED: -Infinity,
+      FACE_OBSTRUCTED: -Infinity,
     }
   }
 
@@ -62,6 +84,91 @@ export class TemporalProctorFilter {
       this.consecutiveAbsenceFrames = 0
       this.multipleFaceStartedAtMs = null
       this.consecutiveMultipleFaceFrames = 0
+
+      // 1. Gaze & Off-Screen Attention Temporal Check
+      if (metrics.isGazeAverted) {
+        if (this.gazeAvertedStartedAtMs === null) {
+          this.gazeAvertedStartedAtMs = now
+        }
+        this.consecutiveGazeFrames += 1
+        const gazeElapsed = Math.max(0, now - this.gazeAvertedStartedAtMs)
+        if (
+          gazeElapsed >= 3500 &&
+          this.consecutiveGazeFrames >= 10 &&
+          now - (this.lastSignalAtMs.PROLONGED_OFFSCREEN_GAZE ?? -Infinity) >= this.config.alertCooldownMs
+        ) {
+          this.lastSignalAtMs.PROLONGED_OFFSCREEN_GAZE = now
+          signals.push({
+            eventType: 'PROLONGED_OFFSCREEN_GAZE',
+            severity: 'low',
+            confidence: 0.85,
+            sustainedDurationMs: Math.round(gazeElapsed),
+            consecutiveFrames: this.consecutiveGazeFrames,
+            reason: `Candidate gaze remained averted from screen continuously for ${(gazeElapsed / 1000).toFixed(1)}s`,
+            details: {
+              yaw: metrics.estimatedYawOffset,
+              pitch: metrics.estimatedPitchOffset,
+              roll: metrics.estimatedRollDegrees,
+              sustainedDurationMs: Math.round(gazeElapsed),
+            },
+          })
+        }
+      } else {
+        this.gazeAvertedStartedAtMs = null
+        this.consecutiveGazeFrames = 0
+      }
+
+      // 2. Sudden Head Movement Observation Check
+      if (metrics.estimatedYawOffset !== null && this.lastYaw !== null) {
+        const deltaYaw = Math.abs(metrics.estimatedYawOffset - this.lastYaw)
+        if (
+          deltaYaw >= 0.42 &&
+          now - (this.lastSignalAtMs.HEAD_MOVEMENT_OBSERVED ?? -Infinity) >= 15000
+        ) {
+          this.lastSignalAtMs.HEAD_MOVEMENT_OBSERVED = now
+          signals.push({
+            eventType: 'HEAD_MOVEMENT_OBSERVED',
+            severity: 'low',
+            confidence: 0.8,
+            reason: 'Noticeable rapid head rotation observed in webcam frame',
+            details: {
+              deltaYaw: Number(deltaYaw.toFixed(3)),
+              currentYaw: metrics.estimatedYawOffset,
+            },
+          })
+        }
+      }
+      if (metrics.estimatedYawOffset !== null) {
+        this.lastYaw = metrics.estimatedYawOffset
+      }
+
+      // 3. Obstruction check
+      if (metrics.isObstructed) {
+        if (this.obstructedStartedAtMs === null) {
+          this.obstructedStartedAtMs = now
+        }
+        this.consecutiveObstructedFrames += 1
+        const obstElapsed = Math.max(0, now - this.obstructedStartedAtMs)
+        if (
+          obstElapsed >= 3000 &&
+          this.consecutiveObstructedFrames >= 8 &&
+          now - (this.lastSignalAtMs.FACE_OBSTRUCTED ?? -Infinity) >= this.config.alertCooldownMs
+        ) {
+          this.lastSignalAtMs.FACE_OBSTRUCTED = now
+          signals.push({
+            eventType: 'FACE_OBSTRUCTED',
+            severity: 'medium',
+            confidence: 0.82,
+            sustainedDurationMs: Math.round(obstElapsed),
+            consecutiveFrames: this.consecutiveObstructedFrames,
+            reason: `Candidate face partially obstructed or out of focal view for ${(obstElapsed / 1000).toFixed(1)}s`,
+            details: { landmarkCount: metrics.landmarkCount },
+          })
+        }
+      } else {
+        this.obstructedStartedAtMs = null
+        this.consecutiveObstructedFrames = 0
+      }
 
       return {
         faceStatus: 'present',

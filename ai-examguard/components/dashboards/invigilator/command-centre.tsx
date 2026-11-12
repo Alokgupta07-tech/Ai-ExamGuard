@@ -537,6 +537,7 @@ export function InvigilatorCommandCentre({
                     <th className="px-3 py-2.5">Sensors</th>
                     <th className="px-3 py-2.5">Progress</th>
                     <th className="px-3 py-2.5">Risk</th>
+                    <th className="px-3 py-2.5">Strikes</th>
                     <th className="px-3 py-2.5 text-right">Details</th>
                   </tr>
                 </thead>
@@ -607,6 +608,47 @@ export function InvigilatorCommandCentre({
                             </p>
                           </div>
                         </td>
+                        <td className="px-3 py-2.5">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1 font-mono text-[11px]">
+                              {s.autoSubmitted ? (
+                                <span className="inline-flex items-center gap-1 text-destructive font-semibold">
+                                  <ShieldAlert className="h-3 w-3" />
+                                  3/3 Terminated
+                                </span>
+                              ) : (s.warningCount ?? 0) > 0 ? (
+                                <span
+                                  className={`inline-flex items-center gap-1 font-semibold ${
+                                    (s.warningCount ?? 0) >= 2
+                                      ? 'text-destructive'
+                                      : 'text-warning'
+                                  }`}
+                                >
+                                  <AlertTriangle className="h-3 w-3" />
+                                  {s.warningCount ?? 0} / {s.maxWarnings ?? 3} Strikes
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">0 / 3 Clean</span>
+                              )}
+                            </div>
+                            <div className="flex gap-0.5">
+                              {[1, 2, 3].map((st) => (
+                                <div
+                                  key={st}
+                                  className={`h-1.5 w-3.5 rounded-full ${
+                                    (s.warningCount ?? 0) >= st
+                                      ? (s.warningCount ?? 0) >= 3
+                                        ? 'bg-destructive'
+                                        : (s.warningCount ?? 0) === 2
+                                          ? 'bg-warning'
+                                          : 'bg-amber-400'
+                                      : 'bg-muted/40'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        </td>
                         <td className="px-3 py-2.5 text-right">
                           <Button
                             type="button"
@@ -674,11 +716,25 @@ export function InvigilatorCommandCentre({
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] font-mono text-muted-foreground">
-                      <span>
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-muted-foreground">
                         Progress: {qTotal > 0 ? `${qAnswered}/${qTotal} (${pct}%)` : 'Pending'}
                       </span>
-                      <span>Trust {s.trustScore.toFixed(0)}%</span>
+                      {s.autoSubmitted ? (
+                        <span className="text-destructive font-semibold flex items-center gap-1">
+                          <ShieldAlert className="h-3 w-3" /> Terminated (3/3)
+                        </span>
+                      ) : (s.warningCount ?? 0) > 0 ? (
+                        <span
+                          className={`font-semibold flex items-center gap-1 ${
+                            (s.warningCount ?? 0) >= 2 ? 'text-destructive' : 'text-warning'
+                          }`}
+                        >
+                          <AlertTriangle className="h-3 w-3" /> {s.warningCount}/3 Strikes
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">Trust {s.trustScore.toFixed(0)}%</span>
+                      )}
                     </div>
                   </div>
                 );
