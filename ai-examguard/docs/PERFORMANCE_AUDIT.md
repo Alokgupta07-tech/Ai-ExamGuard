@@ -168,3 +168,4 @@ The root cause is **NOT** network bandwidth or client hardware. It is an archite
 - **Network Requests Per Navigation:** Reduced from **15 remote HTTP queries** to **0 blocking queries** (background SWR revalidation).
 - **UI Experience:** Zero skeleton flickering when switching between tabs under the same dashboard role.
 - **Security & Integrity:** 100% preserved. RLS policies, server-side authorization checks, role protection, and token validation remain strictly enforced.
+

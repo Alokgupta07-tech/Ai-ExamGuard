@@ -95,7 +95,7 @@ const getCachedActorData = cache(async (userId: string) => {
     email: profile?.email || '',
     fullName: profile?.full_name || 'User',
     tenantId: activeTenantId,
-    tenantName: tenant?.name || 'University Tenant',
+    tenantName: tenant?.name || 'SRM University–AP',
     tenantSlug: tenant?.slug || 'default',
     tenantDomain: tenant?.domain ?? null,
     tenantSettings: (tenant?.settings as TenantSettings) || {},

@@ -1,45 +1,45 @@
 'use client';
 
 import React from 'react';
-import { ChevronRight, ClipboardCheck, Cpu, FileCheck, FileEdit, UserCheck } from 'lucide-react';
+import { ChevronRight, ClipboardCheck, Cpu, FileCheck, FileEdit, ShieldCheck, UserCheck } from 'lucide-react';
 import { ScrollRevealGroup } from '@/components/landing/scroll-reveal';
 
 const PROCESS_STEPS = [
   {
     step: '01',
-    title: 'Create Exam',
-    subtitle: 'Author questions & rules',
-    icon: FileEdit,
+    title: 'University Setup',
+    description: 'Configure institutional policies, sensor thresholds, and role permissions.',
+    icon: ShieldCheck,
   },
   {
     step: '02',
-    title: 'Student Verification',
-    subtitle: 'Device & sensor preflight',
-    icon: ClipboardCheck,
+    title: 'Examination Creation',
+    description: 'Faculty author question banks with server-isolated keys and scheduling.',
+    icon: FileEdit,
   },
   {
     step: '03',
-    title: 'AI Monitoring',
-    subtitle: 'Local WASM telemetry',
-    icon: Cpu,
+    title: 'Student Verification',
+    description: 'Candidates complete transparent sensor preflight and device checks.',
+    icon: ClipboardCheck,
   },
   {
     step: '04',
-    title: 'Event Review',
-    subtitle: 'Human invigilator oversight',
-    icon: UserCheck,
+    title: 'AI Monitoring',
+    description: 'Local WebAssembly models track presence, gaze, and acoustic baselines.',
+    icon: Cpu,
   },
   {
     step: '05',
-    title: 'Exam Report',
-    subtitle: 'Immutable audit trail',
-    icon: FileCheck,
+    title: 'Examiner Review',
+    description: 'Human invigilators adjudicate telemetry incidents and sign off reports.',
+    icon: UserCheck,
   },
 ];
 
 /**
- * SECTION 4 — How It Works
- * Compact horizontal workflow diagram: Create Exam → Student Verification → AI Monitoring → Event Review → Exam Report.
+ * SECTION 4 — How It Works: From Examination to Integrity Review
+ * 5 clean steps with numbers, professional titles, single-sentence descriptions, and visual flow.
  */
 export function HowItWorksSection() {
   return (
@@ -51,8 +51,11 @@ export function HowItWorksSection() {
             Assessment Workflow
           </p>
           <h2 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-            How AI ExamGuard Works
+            From Examination to Integrity Review
           </h2>
+          <p className="text-xs sm:text-sm text-ink-secondary leading-relaxed">
+            A seamless, five-step institutional workflow engineered for transparency and faculty oversight.
+          </p>
         </div>
 
         {/* Horizontal Process Diagram */}
@@ -63,9 +66,9 @@ export function HowItWorksSection() {
 
             return (
               <div key={item.step} className="reveal-item flex flex-col justify-between relative group">
-                <div className="rounded-xl border border-border bg-background p-4 space-y-3 h-full flex flex-col justify-between transition-colors hover:border-primary/40">
+                <div className="rounded-xl border border-border bg-background p-4 space-y-3 h-full flex flex-col justify-between transition-colors hover:border-primary/40 shadow-xs">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-[11px] font-semibold text-primary">
+                    <span className="font-mono text-xs font-bold text-primary">
                       {item.step}
                     </span>
                     <div className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card text-ink-secondary">
@@ -77,8 +80,8 @@ export function HowItWorksSection() {
                     <h3 className="font-heading text-xs sm:text-sm font-semibold text-foreground">
                       {item.title}
                     </h3>
-                    <p className="text-[11px] text-ink-secondary">
-                      {item.subtitle}
+                    <p className="text-[11px] text-ink-secondary leading-relaxed">
+                      {item.description}
                     </p>
                   </div>
                 </div>

@@ -40,7 +40,7 @@ export class AuthService {
   /**
    * Sign up a new user with institutional role & optional tenant
    */
-  static async signUp({ email, password, fullName, role, tenantSlug = 'test-uni' }: Omit<SignUpCredentials, 'role'> & { role: UserRole | 'faculty' }) {
+  static async signUp({ email, password, fullName, role, tenantSlug = 'srm-ap' }: Omit<SignUpCredentials, 'role'> & { role: UserRole | 'faculty' }) {
     const normalizedRole: UserRole = (role as string) === 'faculty' ? 'instructor' : (role as UserRole);
 
     const { data, error } = await this.supabase.auth.signUp({

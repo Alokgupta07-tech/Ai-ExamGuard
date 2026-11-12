@@ -124,3 +124,4 @@ All existing functionality, security boundaries, and role permissions remain str
 1. **Pagination for Very Large Enterprise Roster Datasets**: Currently, members and audit logs retrieve up to 50–200 rows. If an institution scales to 100,000+ active candidates, cursor-based pagination should be introduced in the database service.
 2. **CDN Edge Caching for Static Public Content**: Marketing and landing assets can be cached at the Cloudflare / Vercel Edge layer with `stale-while-revalidate` HTTP cache headers.
 3. **Database Connection Pooling**: Under multi-thousand concurrent examination loads, Supabase Transaction Connection Pooling (Supavisor on port 6543) should be configured in `.env.production`.
+

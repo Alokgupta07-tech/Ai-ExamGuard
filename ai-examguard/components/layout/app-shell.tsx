@@ -17,7 +17,7 @@ export function AppShell({ children }: AppShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  const tenantName = user?.activeTenant?.name || 'Test University';
+  const tenantName = user?.activeTenant?.name || 'SRM University–AP';
   const userName = user?.full_name || 'Authenticated User';
   const userEmail = user?.email || '';
 

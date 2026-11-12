@@ -87,7 +87,7 @@ export function ProductShowcaseSection() {
 
   return (
     <section
-      id="experience"
+      id="product"
       className="border-b border-border bg-background py-16 sm:py-24 px-4 sm:px-8"
     >
       <ScrollRevealGroup className="mx-auto max-w-7xl space-y-12">
@@ -201,7 +201,7 @@ export function ProductShowcaseSection() {
                         <span className="font-heading text-sm font-semibold text-foreground">
                           Institutional Member Directory
                         </span>
-                        <span className="font-mono text-xs text-muted-foreground">Tenant: Stanford CS</span>
+                        <span className="font-mono text-xs text-muted-foreground">Tenant: SRM University–AP</span>
                       </div>
                       <div className="divide-y divide-border text-xs">
                         {[
@@ -295,9 +295,9 @@ export function ProductShowcaseSection() {
                   <div className="rounded-lg border border-border bg-card p-6 space-y-4 shadow-xs">
                     <div className="flex items-center justify-between border-b border-border pb-3">
                       <div>
-                        <span className="font-mono text-xs font-semibold text-primary">CS-201 Final Examination</span>
+                        <span className="font-mono text-xs font-semibold text-primary">ECE-302 Digital Electronics</span>
                         <h4 className="font-heading text-base font-bold text-foreground">
-                          Question 4: Balanced Tree Red-Black Properties
+                          Question 4: Synchronous Counter State Transition
                         </h4>
                       </div>
                       <StatusBadge tone="teal">5 Points • Server Key Isolated</StatusBadge>
@@ -305,10 +305,10 @@ export function ProductShowcaseSection() {
 
                     <div className="space-y-2 text-xs font-mono">
                       {[
-                        { letter: 'A', text: 'Every leaf node (NIL) must be black.', correct: true },
-                        { letter: 'B', text: 'If a node is red, both of its children must be red.', correct: false },
-                        { letter: 'C', text: 'The root node is permitted to be red.', correct: false },
-                        { letter: 'D', text: 'Simple paths to leaves can contain unequal black heights.', correct: false },
+                        { letter: 'A', text: 'All flip-flops are clocked simultaneously by a common clock pulse.', correct: true },
+                        { letter: 'B', text: 'Each flip-flop is clocked by the output of the preceding stage.', correct: false },
+                        { letter: 'C', text: 'Propagation delays accumulate linearly with the number of bits.', correct: false },
+                        { letter: 'D', text: 'No external gating logic is required between stages.', correct: false },
                       ].map((opt) => (
                         <div
                           key={opt.letter}
@@ -345,10 +345,10 @@ export function ProductShowcaseSection() {
                   <div className="rounded-lg border border-border bg-card p-4 flex flex-wrap items-center justify-between gap-3 shadow-xs">
                     <div className="flex items-center gap-3">
                       <span className="font-mono text-xs font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded border border-primary/20">
-                        CS-201
+                        ECE-302
                       </span>
                       <h4 className="font-heading text-sm font-semibold text-foreground">
-                        Data Structures & Algorithms Final Examination
+                        Digital Electronics & Logic Design Examination
                       </h4>
                     </div>
 
@@ -384,15 +384,15 @@ export function ProductShowcaseSection() {
                     </div>
 
                     <p className="text-base font-medium text-foreground leading-relaxed">
-                      What is the worst-case asymptotic time complexity for inserting an element into an AVL tree with n nodes?
+                      Which flip-flop configuration eliminates the indeterminate condition that occurs when both inputs are HIGH in an S-R latch?
                     </p>
 
                     <div className="space-y-3">
                       {[
-                        { key: 'A', text: 'O(1) amortized', selected: false },
-                        { key: 'B', text: 'O(log n) guaranteed', selected: true },
-                        { key: 'C', text: 'O(n) worst case', selected: false },
-                        { key: 'D', text: 'O(n log n)', selected: false },
+                        { key: 'A', text: 'D Flip-Flop with active-low clear', selected: false },
+                        { key: 'B', text: 'J-K Flip-Flop with toggle on J=1, K=1', selected: true },
+                        { key: 'C', text: 'Transparent T Latch without clocking', selected: false },
+                        { key: 'D', text: 'Unbuffered Master-Slave R-S latch', selected: false },
                       ].map((ans) => (
                         <div
                           key={ans.key}
@@ -466,7 +466,7 @@ export function ProductShowcaseSection() {
                         <span className="font-heading text-sm font-semibold text-foreground">
                           Candidate Monitoring Roster
                         </span>
-                        <span className="font-mono text-xs text-muted-foreground">CS-201 Cohort</span>
+                        <span className="font-mono text-xs text-muted-foreground">ECE-302 Cohort (Hall 4B)</span>
                       </div>
                       <div className="divide-y divide-border text-xs">
                         {[

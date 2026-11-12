@@ -9,13 +9,16 @@ import { cn } from '@/lib/utils';
 
 const NAV_LINKS = [
   { href: '#platform', label: 'Platform' },
+  { href: '#university', label: 'University' },
+  { href: '#workflow', label: 'Workflow' },
+  { href: '#product', label: 'Product' },
   { href: '#capabilities', label: 'Capabilities' },
   { href: '#privacy', label: 'Privacy' },
 ];
 
 /**
  * SECTION 1 — Compact Professional Navbar
- * Minimal, elegant, and responsive.
+ * Minimal, elegant, responsive, and university-aware.
  */
 export function LandingNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -45,15 +48,21 @@ export function LandingNav() {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-md">
       <div className="mx-auto max-w-6xl h-14 px-4 sm:px-6 flex items-center justify-between gap-4">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 shrink-0 group">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
-            <ShieldCheck className="h-4 w-4" />
-          </div>
-          <span className="font-heading text-sm font-semibold tracking-tight text-foreground">
-            AI <span className="text-primary font-bold">ExamGuard</span>
+        {/* Logo & Demo Tenant Pill */}
+        <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-2 shrink-0 group">
+            <div className="flex h-7 w-7 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
+              <ShieldCheck className="h-4 w-4" />
+            </div>
+            <span className="font-heading text-sm font-semibold tracking-tight text-foreground">
+              AI <span className="text-primary font-bold">ExamGuard</span>
+            </span>
+          </Link>
+          <span className="hidden lg:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border border-border bg-card text-ink-secondary">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+            Demo: SRM University–AP
           </span>
-        </Link>
+        </div>
 
         {/* Center: Desktop Navigation Links */}
         <nav className="hidden md:flex items-center gap-1" aria-label="Main navigation">
@@ -64,7 +73,7 @@ export function LandingNav() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
                   isActive
                     ? 'text-primary bg-primary/10 font-semibold'
                     : 'text-ink-secondary hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5'
