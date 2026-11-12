@@ -12,6 +12,7 @@ import {
   Mic,
   PanelLeft,
   RefreshCw,
+  Send,
   ShieldCheck,
   Wifi,
   WifiOff,
@@ -29,11 +30,17 @@ export type SaveSyncStatus = 'saved' | 'saving' | 'queued' | 'error';
 export interface ExamTopBarProps {
   title: string;
   courseCode: string;
+  courseName?: string;
+  examType?: string;
   remainingSeconds: number;
   saveStatus: SaveSyncStatus;
   pendingCount: number;
   lastSavedAt: string | null;
   isOnline: boolean;
+  answeredCount?: number;
+  totalQuestions?: number;
+  onRequestSubmit?: () => void;
+  isSubmitting?: boolean;
   monitoring: {
     cameraReady: boolean;
     micReady: boolean;
@@ -65,21 +72,20 @@ function formatCountdown(totalSeconds: number): string {
   return `${pad(mins)}:${pad(secs)}`;
 }
 
-function formatSavedTime(iso: string | null): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-}
-
 export function ExamTopBar({
   title,
   courseCode,
+  courseName,
+  examType,
   remainingSeconds,
   saveStatus,
   pendingCount,
   lastSavedAt,
   isOnline,
+  answeredCount = 0,
+  totalQuestions = 0,
+  onRequestSubmit,
+  isSubmitting = false,
   monitoring,
   onRetrySync,
   onEnterFullscreen,
@@ -88,233 +94,165 @@ export function ExamTopBar({
   const isCriticalTime = remainingSeconds <= 60;
   const isWarningTime = !isCriticalTime && remainingSeconds <= 300;
 
+  const progressPct =
+    totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
+
+  const derivedExamType =
+    examType ||
+    (title.toLowerCase().includes('mid-sem')
+      ? 'Mid-Semester Written'
+      : title.toLowerCase().includes('end-sem')
+      ? 'End-Semester Draft'
+      : title.toLowerCase().includes('cla-3')
+      ? 'Continuous Assessment (CLA-3)'
+      : 'Academic Examination');
+
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-sidebar">
-      <div className="mx-auto max-w-[1440px] px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-        {/* Left: Exam Title + Mobile Navigator Trigger */}
+    <header className="sticky top-0 z-30 border-b border-border bg-sidebar shadow-[0_1px_4px_rgba(24,35,33,0.03)]">
+      <div className="mx-auto max-w-[1440px] px-4 sm:px-6 h-18 flex items-center justify-between gap-4">
+        {/* Left: Mobile Nav Button + Brand & Subject (Image 3 Style) */}
         <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
             onClick={onToggleMobileNav}
             aria-label="Open question navigator"
-            className="lg:hidden inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-card text-foreground hover:bg-surface-elevated transition-[background-color,border-color] duration-150 cursor-pointer"
+            className="lg:hidden inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-foreground hover:bg-surface-elevated transition-colors cursor-pointer"
           >
             <PanelLeft className="h-4 w-4" />
           </button>
 
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="shrink-0 rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[11px] text-primary">
-                {courseCode}
+          <div className="min-w-0 flex items-center gap-3">
+            {/* Exam Type pill */}
+            <div className="hidden sm:flex flex-col">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Exam Type
               </span>
-              <h1 className="font-heading text-sm sm:text-base font-semibold text-foreground truncate">
-                {title}
-              </h1>
+              <span className="font-heading text-xs font-semibold text-primary truncate max-w-[180px]">
+                {derivedExamType}
+              </span>
+            </div>
+
+            <div className="hidden sm:block h-7 w-px bg-border" />
+
+            {/* Subject */}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="shrink-0 rounded border border-border bg-card px-2 py-0.5 font-mono text-[11px] font-semibold text-primary">
+                  {courseCode}
+                </span>
+                <h1 className="font-heading text-sm sm:text-base font-semibold text-foreground truncate max-w-[260px] sm:max-w-[360px]">
+                  {courseName || title}
+                </h1>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Right: Monitoring, Connection, Save Status, Countdown Timer */}
+        {/* Center: Completion Progress Bar (Image 3 Style: Completed (1/4) 40%) */}
+        {totalQuestions > 0 && (
+          <div className="hidden md:flex flex-col items-center gap-1 min-w-[180px]">
+            <div className="flex items-center justify-between w-full text-xs">
+              <span className="text-muted-foreground font-medium">
+                Completed ({answeredCount}/{totalQuestions})
+              </span>
+              <span className="font-mono font-semibold text-foreground">
+                {progressPct}%
+              </span>
+            </div>
+            <div className="w-full bg-border rounded-full h-2 overflow-hidden">
+              <div
+                className="h-full bg-emerald-600 transition-all duration-300 rounded-full"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Right: Proctoring, Online status, and Submit Button (Image 3 Style) */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Monitoring status */}
+          {/* Proctoring telemetry pill */}
           <div
-            className="hidden md:flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs text-muted-foreground"
-            aria-label="Monitoring status"
+            className="hidden xl:flex items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-muted-foreground"
+            aria-label="Proctoring status"
           >
-            <ShieldCheck className="h-3.5 w-3.5 text-secondary shrink-0" />
-            <span>Monitoring</span>
+            <ShieldCheck className="h-3.5 w-3.5 text-primary shrink-0" />
+            <span className="font-medium text-[11px]">AI Proctor</span>
             {monitoring.requireCamera && (
               <span
                 className={cn(
                   'inline-flex items-center gap-1 font-mono text-[11px]',
-                  monitoring.faceStatus === 'multiple_faces_detected' ||
-                    monitoring.cameraStatus === 'disconnected' ||
-                    monitoring.cameraStatus === 'permission_denied'
-                    ? 'text-critical'
-                    : monitoring.faceStatus === 'face_not_visible'
-                      ? 'text-warning'
-                      : monitoring.cameraReady
-                        ? 'text-success'
-                        : 'text-warning'
+                  monitoring.cameraReady ? 'text-emerald-600 font-medium' : 'text-amber-600'
                 )}
-                title={
-                  monitoring.faceStatus === 'multiple_faces_detected'
-                    ? 'Multiple faces detected'
-                    : monitoring.faceStatus === 'face_not_visible'
-                      ? 'Face not visible'
-                      : monitoring.cameraReady
-                        ? 'Camera & face monitoring active'
-                        : 'Camera unavailable'
-                }
               >
                 <Camera className="h-3 w-3" />
-                {monitoring.faceStatus === 'multiple_faces_detected'
-                  ? '2+ Faces'
-                  : monitoring.faceStatus === 'face_not_visible'
-                    ? 'No Face'
-                    : monitoring.cameraStatus === 'disconnected'
-                      ? 'Cam Lost'
-                      : monitoring.cameraStatus === 'permission_denied'
-                        ? 'Cam Denied'
-                        : monitoring.cameraReady
-                          ? 'Cam Live'
-                          : 'No Cam'}
+                {monitoring.cameraReady ? 'Live' : 'Off'}
               </span>
             )}
             {monitoring.requireAudio && (
               <span
                 className={cn(
                   'inline-flex items-center gap-1 font-mono text-[11px]',
-                  monitoring.audioStatus === 'disconnected' ||
-                    monitoring.audioStatus === 'permission_denied' ||
-                    monitoring.audioStatus === 'device_unavailable'
-                    ? 'text-critical'
-                    : monitoring.micReady
-                      ? 'text-success'
-                      : 'text-warning'
+                  monitoring.micReady ? 'text-emerald-600 font-medium' : 'text-amber-600'
                 )}
-                title={
-                  monitoring.audioStatus === 'disconnected'
-                    ? 'Microphone disconnected during session'
-                    : monitoring.audioStatus === 'permission_denied'
-                      ? 'Microphone permission denied'
-                      : monitoring.micReady
-                        ? 'Microphone live (local energy analysis only)'
-                        : 'Microphone unavailable'
-                }
               >
                 <Mic className="h-3 w-3" />
-                {monitoring.audioStatus === 'disconnected'
-                  ? 'Mic Lost'
-                  : monitoring.audioStatus === 'permission_denied'
-                    ? 'Mic Denied'
-                    : monitoring.micReady
-                      ? 'Mic Live'
-                      : 'No Mic'}
+                {monitoring.micReady ? 'Live' : 'Off'}
               </span>
             )}
-            {monitoring.isTabVisible === false && (
-              <span
-                className="inline-flex items-center gap-1 font-mono text-[11px] text-warning"
-                title="Examination tab is hidden"
-              >
-                Tab Hidden
+            {monitoring.requireFullscreen && (
+              <span className={cn(
+                'text-[11px] font-mono',
+                monitoring.fullscreenActive ? 'text-emerald-600' : 'text-amber-600'
+              )}>
+                {monitoring.fullscreenActive ? 'Full' : 'Windowed'}
               </span>
-            )}
-            {monitoring.isTabVisible !== false && monitoring.isPageFocused === false && (
-              <span
-                className="inline-flex items-center gap-1 font-mono text-[11px] text-warning"
-                title="Examination window is not currently focused"
-              >
-                Focus Lost
-              </span>
-            )}
-            {monitoring.requireFullscreen && !monitoring.fullscreenActive && (
-              <Button
-                type="button"
-                variant="outline"
-                size="xs"
-                onClick={onEnterFullscreen}
-                className="border-warning/50 text-warning hover:text-warning h-5 px-1.5"
-              >
-                <Maximize2 className="h-3 w-3" />
-                Fullscreen
-              </Button>
-            )}
-            {monitoring.requireFullscreen && monitoring.fullscreenActive && (
-              <span className="text-[11px] font-medium text-success">Locked</span>
             )}
           </div>
 
-          {/* Connection status */}
+          {/* Sync indicator */}
           <div
             className={cn(
-              'hidden sm:inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium',
-              isOnline
-                ? 'border-border bg-card text-foreground'
-                : 'border-critical/40 bg-critical/10 text-critical'
+              'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-mono',
+              saveStatus === 'saved'
+                ? 'border-border bg-card text-muted-foreground'
+                : saveStatus === 'saving'
+                ? 'border-primary/40 bg-primary/10 text-primary'
+                : 'border-amber-500/40 bg-amber-50 text-amber-800'
             )}
-            role="status"
-            aria-label={isOnline ? 'Connection online' : 'Connection offline'}
           >
-            {isOnline ? (
-              <Wifi className="h-3.5 w-3.5 text-success" />
+            {saveStatus === 'saving' ? (
+              <Loader2 className="h-3 w-3 animate-spin text-primary" />
+            ) : saveStatus === 'saved' ? (
+              <Check className="h-3 w-3 text-emerald-600" />
             ) : (
-              <WifiOff className="h-3.5 w-3.5 text-critical" />
+              <CloudOff className="h-3 w-3 text-amber-600" />
             )}
-            <span>{isOnline ? 'Online' : 'Offline'}</span>
+            <span className="hidden sm:inline">
+              {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved' : 'Queued'}
+            </span>
           </div>
 
-          {/* Save status */}
-          <div
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium',
-              saveStatus === 'saved' && 'border-border bg-card text-muted-foreground',
-              saveStatus === 'saving' && 'border-primary/35 bg-primary/10 text-primary',
-              saveStatus === 'queued' && 'border-warning/40 bg-warning/10 text-warning',
-              saveStatus === 'error' && 'border-critical/40 bg-critical/10 text-critical'
-            )}
-            role="status"
-            aria-live="polite"
-          >
-            {saveStatus === 'saved' && (
-              <>
-                <Check className="h-3.5 w-3.5 text-success shrink-0" />
-                <span className="hidden sm:inline">
-                  Saved{lastSavedAt ? ` · ${formatSavedTime(lastSavedAt)}` : ''}
-                </span>
-                <span className="sm:hidden">Saved</span>
-              </>
-            )}
-            {saveStatus === 'saving' && (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
-                <span>Saving…</span>
-              </>
-            )}
-            {saveStatus === 'queued' && (
-              <>
-                <CloudOff className="h-3.5 w-3.5 shrink-0" />
-                <span>Queued ({pendingCount})</span>
-              </>
-            )}
-            {saveStatus === 'error' && (
-              <button
-                type="button"
-                onClick={onRetrySync}
-                className="inline-flex items-center gap-1 cursor-pointer hover:underline"
-              >
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                <span>Retry sync</span>
-                <RefreshCw className="h-3 w-3 shrink-0" />
-              </button>
-            )}
-          </div>
-
-          {/* Server-controlled Countdown Timer */}
-          <div
-            className={cn(
-              'inline-flex items-center gap-2 rounded-md border px-3 py-1.5 font-mono text-sm sm:text-base font-semibold tabular-nums',
-              isCriticalTime
-                ? 'border-critical/60 bg-critical/15 text-critical'
-                : isWarningTime
-                  ? 'border-warning/60 bg-warning/15 text-warning'
-                  : 'border-primary/35 bg-card text-foreground'
-            )}
-            aria-label={`Time remaining ${formatCountdown(remainingSeconds)}`}
-          >
-            <Clock
-              className={cn(
-                'h-4 w-4 shrink-0',
-                isCriticalTime
-                  ? 'text-critical'
-                  : isWarningTime
-                    ? 'text-warning'
-                    : 'text-primary'
+          {/* Prominent Submit Answer Button (as featured in Reference Image 3) */}
+          {onRequestSubmit && (
+            <Button
+              type="button"
+              onClick={onRequestSubmit}
+              disabled={isSubmitting}
+              className="bg-emerald-700 hover:bg-emerald-800 text-white font-medium shadow-sm transition-all text-xs sm:text-sm px-3.5 sm:px-5 py-2 h-9 sm:h-10 rounded-lg"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                  Submitting…
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-1.5" />
+                  Submit Answer
+                </>
               )}
-            />
-            <span>{formatCountdown(remainingSeconds)}</span>
-          </div>
+            </Button>
+          )}
         </div>
       </div>
     </header>

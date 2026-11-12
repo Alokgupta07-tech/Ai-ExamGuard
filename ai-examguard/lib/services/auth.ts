@@ -3,7 +3,9 @@ import type { SignInCredentials, SignUpCredentials, UserProfileWithRoles } from 
 import type { UserRole, Tenant } from '@/types/database';
 
 export class AuthService {
-  private static supabase = createClient();
+  private static get supabase() {
+    return createClient();
+  }
 
   /**
    * Sign in with email and password
@@ -136,13 +138,23 @@ export class AuthService {
       targetId = user.id;
     }
 
-    const { data: profile } = await this.supabase
+    let { data: profile, error: pError } = await this.supabase
       .from('profiles')
       .select('*')
       .eq('id', targetId)
       .maybeSingle();
 
-    if (!profile) return null;
+    if (!profile) {
+      const { data: { user } } = await this.supabase.auth.getUser();
+      if (!user || user.id !== targetId) return null;
+      profile = {
+        id: user.id,
+        email: user.email || '',
+        full_name: (user.user_metadata?.full_name as string) || user.email?.split('@')[0] || 'User',
+        created_at: user.created_at,
+        updated_at: user.updated_at || user.created_at,
+      };
+    }
 
     // Fetch memberships and associated tenants
     const { data: memberships } = await this.supabase
@@ -160,7 +172,7 @@ export class AuthService {
     }) => ({
       tenant_id: m.tenant_id,
       user_id: m.user_id,
-      role: m.role as UserRole,
+      role: (m.role === 'faculty' ? 'instructor' : m.role) as UserRole,
       created_at: m.created_at,
       updated_at: m.updated_at,
       tenant: (m.tenants as Tenant | undefined),
@@ -173,7 +185,20 @@ export class AuthService {
     else if (roles.includes('instructor')) activeRole = 'instructor';
     else if (roles.includes('invigilator')) activeRole = 'invigilator';
 
-    const activeTenant = formattedMemberships[0]?.tenant;
+    const activeTenant = formattedMemberships[0]?.tenant || {
+      id: '55d810b1-0555-43d2-97e2-d4a420b6173e',
+      name: 'SRM University–AP',
+      slug: 'srmap-demo',
+      domain: 'srmap.edu.in',
+      settings: {
+        location: 'Neerukonda, Mangalagiri, Andhra Pradesh',
+        require_camera: true,
+        require_audio: true,
+        require_fullscreen: true,
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
     return {
       ...profile,

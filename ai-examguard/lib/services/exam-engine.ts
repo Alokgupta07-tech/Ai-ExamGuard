@@ -342,16 +342,62 @@ function buildPublishChecks(
   questionCount: number,
   questionPointsSum: number,
   assignedCount: number,
-  enrolledCount: number
+  enrolledCount: number,
+  unkeyedMcqCount: number = 0,
+  hasDescriptive: boolean = false
 ): ExamPublishCheck[] {
   const checks: ExamPublishCheck[] = [];
+  const settings = (exam.settings as Record<string, unknown>) || {};
+  const examType = (settings.exam_type as string) || (exam.title?.toLowerCase().includes('cla-3') ? 'mcq_cla3' : exam.title?.toLowerCase().includes('mid-sem') ? 'written_midsem' : 'custom');
+  const isProvisional = Boolean(settings.is_provisional_draft) || exam.title?.toLowerCase().includes('provisional draft');
+
+  if (isProvisional) {
+    checks.push({
+      level: 'error',
+      field: 'status',
+      message: 'End-Semester examination is a provisional demo template awaiting official faculty approval before publication.',
+    });
+  }
+
   if (questionCount === 0) {
+    let msg = 'Add at least one authored question before publishing.';
+    if (examType === 'written_midsem') {
+      msg = 'Add your seven descriptive questions before publishing (Answer Any 5 pattern).';
+    } else if (examType === 'mcq_cla3') {
+      msg = 'Add your ten compulsory MCQ questions with marked correct answer keys before publishing.';
+    } else if (examType === 'written_endsem') {
+      msg = 'Add your ten descriptive questions before publishing.';
+    }
     checks.push({
       level: 'error',
       field: 'questions',
-      message: 'Add at least one MCQ question with a marked correct answer key before publishing.',
+      message: msg,
     });
+  } else {
+    // Check specific examination pattern requirements
+    if (examType === 'mcq_cla3' && questionCount < 10) {
+      checks.push({
+        level: 'error',
+        field: 'questions',
+        message: `CLA-3 requires 10 compulsory MCQ questions (currently ${questionCount} authored).`,
+      });
+    }
+    if (examType === 'written_midsem' && questionCount < 7) {
+      checks.push({
+        level: 'error',
+        field: 'questions',
+        message: `Mid-Semester examination requires 7 authored descriptive questions for the 5-of-7 choice pattern (currently ${questionCount} authored).`,
+      });
+    }
+    if (unkeyedMcqCount > 0) {
+      checks.push({
+        level: 'error',
+        field: 'questions',
+        message: `${unkeyedMcqCount} MCQ question(s) lack a marked correct answer key. Every MCQ question must have exactly one correct answer.`,
+      });
+    }
   }
+
   if (exam.total_points <= 0) {
     checks.push({
       level: 'error',
@@ -373,7 +419,7 @@ function buildPublishChecks(
       message: 'Exam duration exceeds the scheduled availability window between start and end times.',
     });
   }
-  if (questionCount > 0 && questionPointsSum !== exam.total_points) {
+  if (questionCount > 0 && !hasDescriptive && questionPointsSum !== exam.total_points && examType !== 'written_midsem' && examType !== 'written_endsem') {
     checks.push({
       level: 'warning',
       field: 'totalPoints',
@@ -1277,7 +1323,7 @@ export class ExamEngineService {
     const [{ data: qPtsRows }, { count: assignCount }, { count: enrCount }] = await Promise.all([
       supabaseAdmin
         .from('questions')
-        .select('points')
+        .select('id, points, type')
         .eq('exam_id', exam.id),
       supabaseAdmin
         .from('exam_assignments')
@@ -1289,11 +1335,27 @@ export class ExamEngineService {
         .eq('course_id', exam.course_id),
     ]);
 
-    const questionList = (qPtsRows || []) as { points: number }[];
+    const questionList = (qPtsRows || []) as { id: string; points: number; type: string }[];
     const questionCount = questionList.length;
     const questionPointsSum = questionList.reduce((acc, q) => acc + Number(q.points || 0), 0);
     const assignedStudentCount = assignCount || 0;
     const enrolledCount = enrCount || 0;
+
+    const mcqQuestions = questionList.filter((q) => q.type === 'mcq_single' || q.type === 'mcq' || q.type === 'mcq_multiple');
+    const hasDescriptive = questionList.some((q) => q.type === 'essay' || q.type === 'descriptive' || q.type === 'short_answer');
+
+    let unkeyedMcqCount = 0;
+    if (mcqQuestions.length > 0) {
+      const qIds = mcqQuestions.map((q) => q.id);
+      const { data: correctKeys } = await supabaseAdmin
+        .from('question_answer_keys')
+        .select('question_id')
+        .in('question_id', qIds)
+        .eq('is_correct', true);
+
+      const keyedSet = new Set((correctKeys || []).map((k: { question_id: string }) => k.question_id));
+      unkeyedMcqCount = mcqQuestions.filter((q) => !keyedSet.has(q.id)).length;
+    }
 
     return {
       examId: exam.id,
@@ -1316,7 +1378,9 @@ export class ExamEngineService {
         questionCount,
         questionPointsSum,
         assignedStudentCount,
-        enrolledCount
+        enrolledCount,
+        unkeyedMcqCount,
+        hasDescriptive
       ),
     };
   }

@@ -370,7 +370,7 @@ async function finalizeAndGradeSession(params: {
       : Promise.resolve({ data: [], error: null }),
     supabaseAdmin
       .from('session_answers')
-      .select('id, question_id, selected_option_id')
+      .select('id, question_id, selected_option_id, response_text')
       .eq('session_id', session.id),
   ]);
 
@@ -389,12 +389,13 @@ async function finalizeAndGradeSession(params: {
 
   const answerByQuestion = new Map<
     string,
-    { id: string; question_id: string; selected_option_id: string | null }
+    { id: string; question_id: string; selected_option_id: string | null; response_text: string | null }
   >();
   for (const ans of (answerRows || []) as {
     id: string;
     question_id: string;
     selected_option_id: string | null;
+    response_text: string | null;
   }[]) {
     if (qIdSet.has(ans.question_id)) {
       answerByQuestion.set(ans.question_id, ans);
@@ -407,35 +408,56 @@ async function finalizeAndGradeSession(params: {
   let penalty = 0;
   let answeredCount = 0;
 
+  let hasMcqScoring = false;
+
   for (const q of questions) {
     maxPoints += q.points;
     const ans = answerByQuestion.get(q.id);
-    if (!ans || !ans.selected_option_id) {
+    if (!ans) {
+      continue;
+    }
+    const hasOption = Boolean(ans.selected_option_id);
+    const hasText = Boolean(ans.response_text && ans.response_text.trim().length > 0);
+    if (!hasOption && !hasText) {
       continue;
     }
     answeredCount += 1;
-    const correctSet = correctOptionByQuestion.get(q.id);
-    const isCorrect = Boolean(correctSet?.has(ans.selected_option_id));
-    const pointsAwarded = isCorrect ? q.points : 0;
 
-    if (isCorrect) {
-      rawEarned += q.points;
-    } else if (negFraction > 0) {
-      penalty += q.points * negFraction;
+    if (hasOption && ans.selected_option_id) {
+      hasMcqScoring = true;
+      const correctSet = correctOptionByQuestion.get(q.id);
+      const isCorrect = Boolean(correctSet?.has(ans.selected_option_id));
+      const pointsAwarded = isCorrect ? q.points : 0;
+
+      if (isCorrect) {
+        rawEarned += q.points;
+      } else if (negFraction > 0) {
+        penalty += q.points * negFraction;
+      }
+
+      await supabaseAdmin
+        .from('session_answers')
+        .update({
+          is_correct: isCorrect,
+          points_awarded: pointsAwarded,
+        })
+        .eq('id', ans.id);
+    } else {
+      // Descriptive question - points will be awarded during faculty evaluation
+      await supabaseAdmin
+        .from('session_answers')
+        .update({
+          is_correct: null,
+          points_awarded: null,
+        })
+        .eq('id', ans.id);
     }
-
-    await supabaseAdmin
-      .from('session_answers')
-      .update({
-        is_correct: isCorrect,
-        points_awarded: pointsAwarded,
-      })
-      .eq('id', ans.id);
   }
 
   const netPoints = Math.max(0, rawEarned - penalty);
-  const percentScore =
-    maxPoints > 0 ? Math.min(100, Math.max(0, Number(((netPoints / maxPoints) * 100).toFixed(2)))) : 0;
+  const percentScore = hasMcqScoring && maxPoints > 0
+    ? Math.min(100, Math.max(0, Number(((netPoints / maxPoints) * 100).toFixed(2))))
+    : null;
 
   const startedAtMs = session.started_at ? Date.parse(session.started_at) : Date.now();
   const submittedAtIso = new Date(Math.max(Date.now(), startedAtMs)).toISOString();
@@ -985,11 +1007,12 @@ export class ExamSessionService {
         })();
 
     // Deduplicate batch by questionId (last entry wins)
-    const deduped = new Map<string, { questionId: string; selectedOptionId: string | null }>();
+    const deduped = new Map<string, { questionId: string; selectedOptionId?: string | null; responseText?: string | null }>();
     for (const item of items) {
       deduped.set(item.questionId, {
         questionId: item.questionId,
         selectedOptionId: item.selectedOptionId,
+        responseText: item.responseText,
       });
     }
     const normalizedItems = Array.from(deduped.values());
@@ -1000,7 +1023,7 @@ export class ExamSessionService {
       await Promise.all([
         supabaseAdmin
           .from('questions')
-          .select('id')
+          .select('id, type')
           .eq('exam_id', ctx.exam.id)
           .in('id', targetQuestionIds),
         supabaseAdmin
@@ -1013,7 +1036,7 @@ export class ExamSessionService {
       throw new ExamSessionError('Failed to verify question reference.', 500);
     }
 
-    const validQuestionSet = new Set(((validQuestions || []) as { id: string }[]).map((q) => q.id));
+    const validQuestionMap = new Map(((validQuestions || []) as { id: string; type: string }[]).map((q) => [q.id, q]));
     const optionsByQuestion = new Map<string, Set<string>>();
     for (const o of (validOptions || []) as { id: string; question_id: string }[]) {
       const set = optionsByQuestion.get(o.question_id) || new Set<string>();
@@ -1024,13 +1047,15 @@ export class ExamSessionService {
     const upsertRows: {
       session_id: string;
       question_id: string;
-      selected_option_id: string;
+      selected_option_id: string | null;
       selected_option_ids: string[];
+      response_text: string | null;
     }[] = [];
     const clearQuestionIds: string[] = [];
 
     for (const item of normalizedItems) {
-      if (!validQuestionSet.has(item.questionId)) {
+      const questionMeta = validQuestionMap.get(item.questionId);
+      if (!questionMeta) {
         throw new ExamSessionError(
           'Question does not belong to this examination.',
           400,
@@ -1038,22 +1063,28 @@ export class ExamSessionService {
         );
       }
 
-      if (item.selectedOptionId === null) {
+      const hasText = typeof item.responseText === 'string' && item.responseText.trim().length > 0;
+      const hasOption = Boolean(item.selectedOptionId);
+
+      if (!hasText && !hasOption) {
         clearQuestionIds.push(item.questionId);
       } else {
-        const allowedOpts = optionsByQuestion.get(item.questionId);
-        if (!allowedOpts || !allowedOpts.has(item.selectedOptionId)) {
-          throw new ExamSessionError(
-            'Selected answer option does not belong to this question.',
-            400,
-            'INVALID_OPTION'
-          );
+        if (hasOption && item.selectedOptionId) {
+          const allowedOpts = optionsByQuestion.get(item.questionId);
+          if (!allowedOpts || !allowedOpts.has(item.selectedOptionId)) {
+            throw new ExamSessionError(
+              'Selected answer option does not belong to this question.',
+              400,
+              'INVALID_OPTION'
+            );
+          }
         }
         upsertRows.push({
           session_id: ctx.session.id,
           question_id: item.questionId,
-          selected_option_id: item.selectedOptionId,
-          selected_option_ids: [item.selectedOptionId],
+          selected_option_id: item.selectedOptionId || null,
+          selected_option_ids: item.selectedOptionId ? [item.selectedOptionId] : [],
+          response_text: hasText ? item.responseText! : null,
         });
       }
     }
@@ -1090,8 +1121,8 @@ export class ExamSessionService {
     return {
       saved: true,
       questionId: single.questionId,
-      selectedOptionId: single.selectedOptionId,
-      cleared: single.selectedOptionId === null,
+      selectedOptionId: single.selectedOptionId ?? null,
+      cleared: single.selectedOptionId === null && !single.responseText,
       serverNow,
     };
   }

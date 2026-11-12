@@ -55,3 +55,11 @@ next-env.d.ts
 # OS
 .DS_Store
 Thumbs.db
+
+# Private Credentials & Local Secrets
+*.local.md
+docs/*.local.md
+
+
+# Private Demo Credentials
+docs/demo-credentials.local.md

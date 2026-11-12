@@ -54,6 +54,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ReviewInspectionDrawer } from '@/components/dashboards/shared/review-inspection-drawer';
 import { CreateCourseModal } from '@/components/dashboards/admin/admin-modals';
+import { AcademicTimetableGrid } from '@/components/shared/academic-timetable';
+import { DemoFeedbackModal } from '@/components/shared/demo-feedback-modal';
+import { Calendar, MessageSquarePlus, Sparkles } from 'lucide-react';
 import type { ExamStatus } from '@/types/database';
 import type { ExamView, QuestionView, ReviewCaseView, SessionView } from '@/types/dashboard';
 
@@ -66,7 +69,8 @@ export type FacultySection =
   | 'monitoring'
   | 'results'
   | 'review-cases'
-  | 'analytics';
+  | 'analytics'
+  | 'timetable';
 
 export function FacultyWorkspace({ section }: { section: FacultySection }) {
   const router = useRouter();
@@ -84,6 +88,7 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
   );
   const [showCourseModal, setShowCourseModal] = useState(false);
   const [selectedCase, setSelectedCase] = useState<ReviewCaseView | null>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   // Create Examination form state
   const [courseId, setCourseId] = useState('');
@@ -401,6 +406,10 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
       title: 'Course & Assessment Analytics',
       desc: 'Participation and integrity distribution across your examinations.',
     },
+    timetable: {
+      title: 'SRM AP Academic Schedule & Weekly Timetable',
+      desc: 'Official SRM University–AP timetable, faculty allocations, and lecture hall locations.',
+    },
   };
 
   return (
@@ -410,7 +419,22 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
         description={HEADER_META[section].desc}
         badge={<StatusBadge tone="teal">Faculty Portal</StatusBadge>}
         actions={
-          <>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setFeedbackOpen(true)}
+              className="border-primary/40 text-primary hover:bg-primary/10 shadow-xs"
+            >
+              <MessageSquarePlus className="h-3.5 w-3.5 mr-1.5" />
+              Demo Feedback
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/faculty/timetable">
+                <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                Timetable
+              </Link>
+            </Button>
             <Button variant="outline" size="sm" onClick={refresh}>
               <RefreshCw className="h-3.5 w-3.5" />
               Refresh
@@ -427,7 +451,7 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
                 </Link>
               </Button>
             )}
-          </>
+          </div>
         }
       />
 
@@ -527,7 +551,17 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
               />
             </div>
           </div>
+
+          {/* SRM AP Academic Timetable Section */}
+          <div className="pt-2">
+            <AcademicTimetableGrid />
+          </div>
         </div>
+      )}
+
+      {/* TIMETABLE VIEW */}
+      {section === 'timetable' && (
+        <AcademicTimetableGrid />
       )}
 
       {/* MY EXAMINATIONS */}
@@ -864,6 +898,11 @@ export function FacultyWorkspace({ section }: { section: FacultySection }) {
         reviewCase={selectedCase}
         onClose={() => setSelectedCase(null)}
         onActionRecorded={refresh}
+      />
+      <DemoFeedbackModal
+        isOpen={feedbackOpen}
+        onClose={() => setFeedbackOpen(false)}
+        defaultRole="Faculty Lead"
       />
     </div>
   );

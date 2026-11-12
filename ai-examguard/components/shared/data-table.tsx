@@ -28,6 +28,7 @@ export interface DataTableProps<T> {
   emptyTitle?: string;
   emptyDescription?: string;
   onRowClick?: (row: T) => void;
+  renderMobileCard?: (row: T) => React.ReactNode;
   className?: string;
 }
 
@@ -46,6 +47,7 @@ export function DataTable<T>({
   emptyTitle = 'No records found',
   emptyDescription = 'Try adjusting your search or filter criteria.',
   onRowClick,
+  renderMobileCard,
   className,
 }: DataTableProps<T>) {
   const [query, setQuery] = useState('');
@@ -116,61 +118,129 @@ export function DataTable<T>({
       {processedData.length === 0 ? (
         <EmptyState title={emptyTitle} description={emptyDescription} />
       ) : (
-        <div className="rounded-lg border border-border bg-card overflow-hidden shadow-[0_1px_3px_rgba(24,35,33,0.02)]">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-border bg-surface-elevated/75 text-[11px] font-semibold text-ink-secondary uppercase tracking-wider">
-                  {columns.map((col) => {
-                    const isSorted = sortKey === col.key;
-                    return (
-                      <th key={col.key} className={cn('px-4 py-3 font-semibold whitespace-nowrap', col.className)}>
-                        {col.sortable ? (
-                          <button
-                            type="button"
-                            onClick={() => handleToggleSort(col)}
-                            className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
-                          >
-                            <span>{col.header}</span>
-                            {isSorted ? (
-                              sortDir === 'asc' ? (
-                                <ArrowUp className="h-3 w-3 text-primary" />
-                              ) : (
-                                <ArrowDown className="h-3 w-3 text-primary" />
-                              )
-                            ) : (
-                              <ArrowUpDown className="h-3 w-3 opacity-50" />
-                            )}
-                          </button>
-                        ) : (
-                          col.header
-                        )}
-                      </th>
-                    );
-                  })}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/70 text-sm">
-                {processedData.map((row) => (
-                  <tr
-                    key={getRowKey(row)}
+        <>
+          {/* Mobile Card View (screens < 768px) - Eliminates horizontal overflow clipping */}
+          <div className="md:hidden space-y-3">
+            {processedData.map((row) => {
+              const key = getRowKey(row);
+              if (renderMobileCard) {
+                return (
+                  <div
+                    key={key}
                     onClick={() => onRowClick?.(row)}
                     className={cn(
-                      'transition-colors hover:bg-surface-elevated/50',
-                      onRowClick && 'cursor-pointer'
+                      'rounded-lg border border-border bg-card p-4 transition-all duration-150 shadow-[0_1px_3px_rgba(24,35,33,0.02)]',
+                      onRowClick && 'cursor-pointer hover:border-primary/40 active:bg-surface-elevated/50'
                     )}
                   >
-                    {columns.map((col) => (
-                      <td key={col.key} className={cn('px-4 py-3.5 align-middle', col.className)}>
+                    {renderMobileCard(row)}
+                  </div>
+                );
+              }
+
+              return (
+                <div
+                  key={key}
+                  onClick={() => onRowClick?.(row)}
+                  className={cn(
+                    'rounded-lg border border-border bg-card p-4 space-y-3 transition-all duration-150 shadow-[0_1px_3px_rgba(24,35,33,0.02)]',
+                    onRowClick && 'cursor-pointer hover:border-primary/40 active:bg-surface-elevated/50'
+                  )}
+                >
+                  {columns.map((col, idx) => (
+                    <div
+                      key={col.key}
+                      className={cn(
+                        'flex items-center justify-between gap-3 text-sm',
+                        idx === 0 && 'border-b border-border/60 pb-2.5',
+                        idx === columns.length - 1 && 'pt-1.5'
+                      )}
+                    >
+                      {idx > 0 && (
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider shrink-0">
+                          {col.header}
+                        </span>
+                      )}
+                      <div className={cn('text-right', idx === 0 && 'w-full text-left')}>
                         {col.render(row)}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
           </div>
-        </div>
+
+          {/* Desktop & Tablet Table View (screens >= 768px) */}
+          <div className="hidden md:block rounded-lg border border-border bg-card overflow-hidden shadow-[0_1px_3px_rgba(24,35,33,0.02)]">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-border bg-surface-elevated/75 text-[11px] font-semibold text-ink-secondary uppercase tracking-wider">
+                    {columns.map((col) => {
+                      const isSorted = sortKey === col.key;
+                      return (
+                        <th key={col.key} className={cn('px-4 py-3 font-semibold whitespace-nowrap', col.className)}>
+                          {col.sortable ? (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleSort(col)}
+                              className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
+                            >
+                              <span>{col.header}</span>
+                              {isSorted ? (
+                                sortDir === 'asc' ? (
+                                  <ArrowUp className="h-3 w-3 text-primary" />
+                                ) : (
+                                  <ArrowDown className="h-3 w-3 text-primary" />
+                                )
+                              ) : (
+                                <ArrowUpDown className="h-3 w-3 opacity-50" />
+                              )}
+                            </button>
+                          ) : (
+                            col.header
+                          )}
+                        </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/70 text-sm">
+                  {processedData.map((row) => (
+                    <tr
+                      key={getRowKey(row)}
+                      onClick={() => onRowClick?.(row)}
+                      className={cn(
+                        'transition-colors hover:bg-surface-elevated/50',
+                        onRowClick && 'cursor-pointer'
+                      )}
+                    >
+                      {columns.map((col) => (
+                        <td key={col.key} className={cn('px-4 py-3.5 align-middle', col.className)}>
+                          {col.render(row)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Bottom Record Counter / Pagination Footer */}
+          <div className="px-1 py-1 flex items-center justify-between text-xs text-muted-foreground">
+            <span>
+              Showing <strong className="text-foreground">{processedData.length}</strong> of{' '}
+              <strong className="text-foreground">{data.length}</strong> records
+            </span>
+            {processedData.length > 0 && (
+              <span className="hidden sm:inline text-[11px] text-muted-foreground/80">
+                Sorted by {sortKey ? `${sortKey} (${sortDir})` : 'default'}
+              </span>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

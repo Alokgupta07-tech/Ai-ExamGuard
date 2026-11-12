@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "npx tsx --test tests/unit-security-and-engines.test.ts",
+    "seed": "npx tsx scripts/seed-srmap-demo.ts",
     "seed:demo": "npx tsx scripts/seed-demo.ts"
   },
   "dependencies": {

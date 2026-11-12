@@ -14,7 +14,8 @@ export const startSessionSchema = z.object({
 
 export const saveAnswerSchema = z.object({
   questionId: z.string().uuid('Invalid question identifier.'),
-  selectedOptionId: z.string().uuid('Invalid answer option identifier.').nullable(),
+  selectedOptionId: z.string().uuid('Invalid answer option identifier.').nullable().optional(),
+  responseText: z.string().max(25000, 'Answer exceeds maximum 25,000 characters.').nullable().optional(),
   clientUpdatedAt: z.string().optional(),
 });
 

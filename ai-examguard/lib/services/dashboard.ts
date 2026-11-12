@@ -55,6 +55,7 @@ export interface VerifiedActor {
 
 /**
  * Memoized actor membership resolution within the request lifecycle.
+ * Idempotently auto-provisions missing profile and tenant membership for authenticated users.
  */
 const getCachedActorData = cache(async (userId: string) => {
   const { data: memberships, error: memError } = await supabaseAdmin
@@ -66,10 +67,54 @@ const getCachedActorData = cache(async (userId: string) => {
     throw new Error(`Failed to verify institutional role: ${memError.message}`);
   }
 
-  const rows = (memberships || []) as { tenant_id: string; role: UserRole }[];
+  let rows = (memberships || []) as { tenant_id: string; role: UserRole }[];
+
+  // Problem A & B Fix: If no membership exists, auto-bootstrap to SRM AP canonical tenant
+  if (rows.length === 0) {
+    const { data: defaultTenant } = await supabaseAdmin
+      .from('tenants')
+      .select('id, name, slug, domain, settings')
+      .or('slug.eq.srmap-demo,slug.eq.test-uni')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (defaultTenant) {
+      const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
+      const metaRole = authUser?.user?.user_metadata?.role as string | undefined;
+      const targetRole: UserRole =
+        metaRole === 'admin'
+          ? 'admin'
+          : metaRole === 'instructor' || metaRole === 'faculty'
+          ? 'instructor'
+          : metaRole === 'invigilator'
+          ? 'invigilator'
+          : 'student';
+
+      await supabaseAdmin.from('memberships').upsert({
+        tenant_id: defaultTenant.id,
+        user_id: userId,
+        role: targetRole,
+        updated_at: new Date().toISOString(),
+      });
+
+      await supabaseAdmin.from('profiles').upsert({
+        id: userId,
+        email: authUser?.user?.email || '',
+        full_name:
+          (authUser?.user?.user_metadata?.full_name as string) ||
+          authUser?.user?.email?.split('@')[0] ||
+          'Institutional User',
+        updated_at: new Date().toISOString(),
+      });
+
+      rows = [{ tenant_id: defaultTenant.id, role: targetRole }];
+    }
+  }
+
   const firstRow = rows[0];
   if (!firstRow) {
-    throw new Error('No tenant membership found for user.');
+    throw new Error('No tenant membership found for user. Please contact your institutional administrator.');
   }
 
   const activeTenantId = firstRow.tenant_id;
@@ -96,7 +141,7 @@ const getCachedActorData = cache(async (userId: string) => {
     fullName: profile?.full_name || 'User',
     tenantId: activeTenantId,
     tenantName: tenant?.name || 'SRM University–AP',
-    tenantSlug: tenant?.slug || 'default',
+    tenantSlug: tenant?.slug || 'srmap-demo',
     tenantDomain: tenant?.domain ?? null,
     tenantSettings: (tenant?.settings as TenantSettings) || {},
     roles: tenantRoles,
@@ -119,7 +164,16 @@ export async function requireRoleActor(allowedRoles: UserRole[]): Promise<Verifi
   }
 
   const actorData = await getCachedActorData(user.id);
-  const matching = actorData.allRows.filter((r) => allowedRoles.includes(r.role));
+  const normalizedAllowed = new Set<string>(allowedRoles);
+  if (allowedRoles.includes('instructor')) normalizedAllowed.add('faculty');
+  if (allowedRoles.includes('student')) normalizedAllowed.add('candidate');
+
+  const matching = actorData.allRows.filter((r) => {
+    const rRole = r.role as string;
+    return normalizedAllowed.has(rRole) ||
+      (rRole === 'instructor' && normalizedAllowed.has('faculty')) ||
+      (rRole === 'student' && normalizedAllowed.has('candidate'));
+  });
   const firstMatch = matching[0];
 
   if (!firstMatch) {

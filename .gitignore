@@ -41,3 +41,9 @@ Thumbs.db
 coverage/
 .nyc_output/
 
+# Private Credentials & Local Secrets
+*.local.md
+docs/*.local.md
+ai-examguard/docs/*.local.md
+
+

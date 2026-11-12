@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -31,6 +31,9 @@ import { ErrorState } from '@/components/shared/error-state';
 import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
 import { Button } from '@/components/ui/button';
 import { DeviceReadinessPanel } from './device-readiness-panel';
+import { AcademicTimetableGrid } from '@/components/shared/academic-timetable';
+import { DemoFeedbackModal } from '@/components/shared/demo-feedback-modal';
+import { Calendar, MessageSquarePlus } from 'lucide-react';
 import type { ExamView, SessionView } from '@/types/dashboard';
 
 export type StudentSection =
@@ -41,9 +44,11 @@ export type StudentSection =
   | 'results'
   | 'device-readiness'
   | 'profile'
-  | 'support';
+  | 'support'
+  | 'timetable';
 
 export function StudentWorkspace({ section }: { section: StudentSection }) {
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const { data, isLoading, error, refresh } = useDashboardData(
     getStudentDashboardAction,
     'student-workspace'
@@ -254,6 +259,10 @@ export function StudentWorkspace({ section }: { section: StudentSection }) {
       title: 'Student Integrity & Privacy Support',
       desc: 'Understand how AI ExamGuard works locally and protects your privacy.',
     },
+    timetable: {
+      title: 'SRM AP Academic Schedule & Weekly Timetable',
+      desc: 'Official SRM University–AP timetable, faculty allocations, and lecture hall locations.',
+    },
   };
 
   return (
@@ -263,10 +272,27 @@ export function StudentWorkspace({ section }: { section: StudentSection }) {
         description={HEADER_META[section].desc}
         badge={<StatusBadge tone="success">Candidate Portal</StatusBadge>}
         actions={
-          <Button variant="outline" size="sm" onClick={refresh}>
-            <RefreshCw className="h-3.5 w-3.5" />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setFeedbackOpen(true)}
+              className="border-primary/40 text-primary hover:bg-primary/10 shadow-xs"
+            >
+              <MessageSquarePlus className="h-3.5 w-3.5 mr-1.5" />
+              Demo Feedback
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/student/timetable">
+                <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                Timetable
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" onClick={refresh}>
+              <RefreshCw className="h-3.5 w-3.5" />
+              Refresh
+            </Button>
+          </div>
         }
       />
 
@@ -409,7 +435,16 @@ export function StudentWorkspace({ section }: { section: StudentSection }) {
           </div>
 
           <DeviceReadinessPanel compact />
+
+          {/* SRM AP Weekly Timetable Block */}
+          <div className="pt-2">
+            <AcademicTimetableGrid studentMode />
+          </div>
         </div>
+      )}
+
+      {section === 'timetable' && (
+        <AcademicTimetableGrid studentMode />
       )}
 
       {section === 'upcoming' && (
@@ -528,6 +563,12 @@ export function StudentWorkspace({ section }: { section: StudentSection }) {
           </div>
         </div>
       )}
+
+      <DemoFeedbackModal
+        isOpen={feedbackOpen}
+        onClose={() => setFeedbackOpen(false)}
+        defaultRole="Student Representative"
+      />
     </div>
   );
 }

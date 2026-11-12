@@ -6,10 +6,12 @@ import {
   Camera,
   Eye,
   Layers,
+  MessageSquarePlus,
   Mic,
   RefreshCw,
   UserCheck,
 } from 'lucide-react';
+import { DemoFeedbackModal } from '@/components/shared/demo-feedback-modal';
 import { useDashboardData } from '@/hooks/use-dashboard-data';
 import { useMonitoringRealtime } from '@/hooks/use-monitoring-realtime';
 import { getInvigilatorDashboardAction } from '@/lib/actions/dashboard-actions';
@@ -66,6 +68,7 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
     eventId?: string | null;
   } | null>(null);
   const [severityFilter, setSeverityFilter] = useState<EventSeverity | 'all'>('all');
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const handleInspectCandidate = (session: SessionView, eventId?: string | null) => {
     setInspectedCandidate({ session, eventId: eventId ?? null });
@@ -375,10 +378,21 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
           </div>
         }
         actions={
-          <Button variant="outline" size="sm" onClick={refresh}>
-            <RefreshCw className="h-3.5 w-3.5" />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setFeedbackOpen(true)}
+              className="border-primary/40 text-primary hover:bg-primary/10 shadow-xs"
+            >
+              <MessageSquarePlus className="h-3.5 w-3.5 mr-1.5" />
+              Demo Feedback
+            </Button>
+            <Button variant="outline" size="sm" onClick={refresh}>
+              <RefreshCw className="h-3.5 w-3.5" />
+              Refresh
+            </Button>
+          </div>
         }
       />
 
@@ -647,6 +661,11 @@ export function InvigilatorWorkspace({ section }: { section: InvigilatorSection 
         }
         onClose={() => setInspectedCandidate(null)}
         onUpdated={refresh}
+      />
+      <DemoFeedbackModal
+        isOpen={feedbackOpen}
+        onClose={() => setFeedbackOpen(false)}
+        defaultRole="Chief Invigilator"
       />
     </div>
   );

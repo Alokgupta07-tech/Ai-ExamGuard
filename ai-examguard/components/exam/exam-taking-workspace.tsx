@@ -182,10 +182,20 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
       clearTimers();
 
       const pendingAnswers = Array.from(pendingQueueRef.current.entries()).map(
-        ([questionId, selectedOptionId]) => ({
-          questionId,
-          selectedOptionId,
-        })
+        ([questionId, val]) => {
+          const q = paper?.questions.find((item) => item.id === questionId);
+          const isDescriptive =
+            q?.type === 'essay' ||
+            q?.type === 'short_answer' ||
+            !q?.options ||
+            q.options.length === 0;
+
+          return {
+            questionId,
+            selectedOptionId: isDescriptive ? null : val,
+            responseText: isDescriptive ? val : null,
+          };
+        }
       );
 
       try {
@@ -253,14 +263,30 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
 
     // Snapshot entries so newer clicks arriving mid-flight are preserved cleanly
     const snapshot = Array.from(pendingQueueRef.current.entries()).map(
-      ([questionId, selectedOptionId]) => ({
-        questionId,
-        selectedOptionId,
-      })
+      ([questionId, val]) => {
+        const q = paper?.questions.find((item) => item.id === questionId);
+        const isDescriptive =
+          q?.type === 'essay' ||
+          q?.type === 'short_answer' ||
+          !q?.options ||
+          q.options.length === 0;
+
+        return {
+          questionId,
+          selectedOptionId: isDescriptive ? null : val,
+          responseText: isDescriptive ? val : null,
+          rawVal: val,
+        };
+      }
     );
 
     try {
-      const payload = snapshot.length === 1 ? snapshot[0] : { answers: snapshot };
+      const payloadAnswers = snapshot.map((s) => ({
+        questionId: s.questionId,
+        selectedOptionId: s.selectedOptionId,
+        responseText: s.responseText,
+      }));
+      const payload = payloadAnswers.length === 1 ? payloadAnswers[0] : { answers: payloadAnswers };
       const res = await fetch(`/api/student/exams/${encodeURIComponent(examId)}/answers`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -280,7 +306,7 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
       // Remove ONLY keys whose value still matches what was transmitted
       for (const sent of snapshot) {
         const latestVal = pendingQueueRef.current.get(sent.questionId);
-        if (pendingQueueRef.current.has(sent.questionId) && latestVal === sent.selectedOptionId) {
+        if (pendingQueueRef.current.has(sent.questionId) && latestVal === sent.rawVal) {
           pendingQueueRef.current.delete(sent.questionId);
         }
       }
@@ -356,7 +382,7 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
       // Restore server answers + merge any crashed/offline local outbox entries
       const restored: Record<string, string | null> = {};
       for (const ans of data.answers) {
-        restored[ans.questionId] = ans.selectedOptionId;
+        restored[ans.questionId] = ans.selectedOptionId || ans.responseText || null;
       }
 
       const localOutbox = readOutbox(examId, data.session.id);
@@ -546,6 +572,24 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
     [currentIndex, isOnline, paper, persistOutbox, receipt, scheduleFlush]
   );
 
+  const handleChangeResponseText = useCallback(
+    (text: string | null) => {
+      if (!paper || receipt) return;
+      const question = paper.questions[currentIndex];
+      if (!question) return;
+
+      setAnswersMap((prev) => ({
+        ...prev,
+        [question.id]: text,
+      }));
+      pendingQueueRef.current.set(question.id, text);
+      persistOutbox();
+      setSaveStatus(isOnline ? 'saving' : 'queued');
+      scheduleFlush(false);
+    },
+    [currentIndex, isOnline, paper, persistOutbox, receipt, scheduleFlush]
+  );
+
   const handleToggleFlag = useCallback(() => {
     if (!paper || receipt) return;
     const question = paper.questions[currentIndex];
@@ -582,9 +626,23 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
     }
   }, []);
 
+  const isMidSem = useMemo(() => {
+    if (!paper) return false;
+    return (
+      paper.title.toLowerCase().includes('mid-sem') ||
+      paper.title.toLowerCase().includes('mid-semester') ||
+      (paper.questions.length === 7 && paper.questions[0]?.points === 8)
+    );
+  }, [paper]);
+
+  const maxAllowedAttempts = isMidSem ? 5 : null;
+
   const answeredCount = useMemo(() => {
     if (!paper) return 0;
-    return paper.questions.filter((q) => Boolean(answersMap[q.id])).length;
+    return paper.questions.filter((q) => {
+      const val = answersMap[q.id];
+      return Boolean(val && val.trim().length > 0);
+    }).length;
   }, [answersMap, paper]);
 
   if (bootstrapping) {
@@ -631,15 +689,29 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
-      {/* TOP: Title, Countdown, Save Status, Connection Status, Monitoring Status */}
+      {/* TOP: Title, Countdown, Save Status, Connection Status, Monitoring Status (Styled after Reference Image 3) */}
       <ExamTopBar
         title={paper.title}
         courseCode={paper.courseCode}
+        courseName={paper.courseName}
+        examType={
+          isMidSem
+            ? 'Mid-Semester Written Examination'
+            : paper.title.toLowerCase().includes('cla-3')
+            ? 'Continuous Assessment (CLA-3)'
+            : paper.title.toLowerCase().includes('end-sem')
+            ? 'End-Semester Draft Examination'
+            : undefined
+        }
         remainingSeconds={remainingSeconds}
         saveStatus={saveStatus}
         pendingCount={pendingCount}
         lastSavedAt={lastSavedAt}
         isOnline={isOnline}
+        answeredCount={answeredCount}
+        totalQuestions={paper.questions.length}
+        onRequestSubmit={() => setConfirmSubmitOpen(true)}
+        isSubmitting={isSubmitting}
         monitoring={{
           cameraReady:
             proctorSnapshot.cameraStatus === 'connected' ||
@@ -689,6 +761,9 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
           onSelectQuestion={navigateToIndex}
           mobileOpen={mobileNavOpen}
           onCloseMobile={() => setMobileNavOpen(false)}
+          remainingSeconds={remainingSeconds}
+          totalDurationSeconds={paper.durationMinutes * 60}
+          maxAllowedAttempts={maxAllowedAttempts}
         />
 
         <main className="flex-1 min-w-0 px-4 py-6 sm:px-8 sm:py-8">
@@ -705,15 +780,25 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
                   question={currentQuestion}
                   questionNumber={currentIndex + 1}
                   totalQuestions={paper.questions.length}
-                  selectedOptionId={answersMap[currentQuestion.id] ?? null}
+                  selectedOptionId={
+                    currentQuestion.options && currentQuestion.options.length > 0
+                      ? answersMap[currentQuestion.id] ?? null
+                      : null
+                  }
+                  responseText={answersMap[currentQuestion.id] ?? ''}
                   isFlagged={flaggedSet.has(currentQuestion.id)}
                   negativeMarking={paper.negativeMarking}
                   onSelectOption={handleSelectOption}
+                  onChangeResponseText={handleChangeResponseText}
                   onToggleFlag={handleToggleFlag}
                   onPrevious={() => navigateToIndex(currentIndex - 1)}
                   onNext={() => navigateToIndex(currentIndex + 1)}
+                  onFirst={() => navigateToIndex(0)}
+                  onLast={() => navigateToIndex(paper.questions.length - 1)}
                   hasPrevious={currentIndex > 0}
                   hasNext={currentIndex < paper.questions.length - 1}
+                  maxAllowedAttempts={maxAllowedAttempts}
+                  totalAnsweredCount={answeredCount}
                 />
               </motion.div>
             </AnimatePresence>

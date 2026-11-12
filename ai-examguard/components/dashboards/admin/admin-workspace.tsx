@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import Link from 'next/link';
 import {
   BookOpen,
   Building,
@@ -10,6 +11,7 @@ import {
   GraduationCap,
   Layers,
   Loader2,
+  MessageSquarePlus,
   Plus,
   RefreshCw,
   Shield,
@@ -519,7 +521,18 @@ export function AdminWorkspace({
         description={sectionHeaders[section].desc}
         badge={<StatusBadge tone="cyan">{data.tenant.slug}</StatusBadge>}
         actions={
-          <>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="border-primary/40 text-primary hover:bg-primary/10 shadow-xs"
+            >
+              <Link href="/admin/feedback">
+                <MessageSquarePlus className="h-3.5 w-3.5 mr-1.5" />
+                Demo Feedback
+              </Link>
+            </Button>
             <Button variant="outline" size="sm" onClick={refresh}>
               <RefreshCw className="h-3.5 w-3.5" />
               Refresh
@@ -548,7 +561,7 @@ export function AdminWorkspace({
                 Create Exam
               </Button>
             )}
-          </>
+          </div>
         }
       />
 
