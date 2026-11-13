@@ -1,6 +1,7 @@
 import React from 'react';
 import { LandingNav } from '@/components/landing/landing-nav';
 import { HeroSection } from '@/components/landing/hero-section';
+import { ExamGuardScrollStory } from '@/components/showcase/ExamGuardScrollStory';
 import { ExamGuard3DCarousel } from '@/components/showcase/ExamGuard3DCarousel';
 import { UniversityShowcaseSection } from '@/components/landing/university-showcase';
 import { HowItWorksSection } from '@/components/landing/how-it-works-section';
@@ -11,16 +12,17 @@ import { CompactFooter } from '@/components/landing/compact-footer';
 
 /**
  * AI ExamGuard — University Experience & Premium Visual Transformation
- * Structured 9-section institutional homepage:
+ * Structured institutional homepage:
  * 1. LandingNav (Top navigation with tenant status pill)
  * 2. HeroSection (Campus architecture backdrop + Live ECE-302 telemetry console)
- * 3. ExamGuard3DCarousel (Interactive 3D Cylindrical Feature Showcase)
- * 4. UniversityShowcaseSection ("Where Innovation Meets Technology" - Authentic student startup & campus visuals)
- * 5. HowItWorksSection ("From Examination to Integrity Review" - 5-step institutional workflow)
- * 6. ProductShowcaseSection ("Experience Across Roles" - Admin, Faculty, Student, Invigilator SOC)
- * 7. FeaturesSection (Core Capabilities - Face, Audio RMS, Fullscreen, Event Intelligence)
- * 8. PrivacySection (Local Processing, Dignity, Human-Led Review)
- * 9. CompactFooter (Clean navigation, institutional configurability disclosure)
+ * 3. ExamGuardScrollStory (Cinematic Three.js 3D Procedural Sculpture Scroll Experience)
+ * 4. ExamGuard3DCarousel (Interactive 3D Cylindrical Feature Showcase)
+ * 5. UniversityShowcaseSection ("Where Innovation Meets Technology" - Authentic student startup & campus visuals)
+ * 6. HowItWorksSection ("From Examination to Integrity Review" - 5-step institutional workflow)
+ * 7. ProductShowcaseSection ("Experience Across Roles" - Admin, Faculty, Student, Invigilator SOC)
+ * 8. FeaturesSection (Core Capabilities - Face, Audio RMS, Fullscreen, Event Intelligence)
+ * 9. PrivacySection (Local Processing, Dignity, Human-Led Review)
+ * 10. CompactFooter (Clean navigation, institutional configurability disclosure)
  */
 export default function HomePage() {
   return (
@@ -32,26 +34,29 @@ export default function HomePage() {
         {/* SECTION 2 — Hero & Live Telemetry Console */}
         <HeroSection />
 
-        {/* SECTION 3 — Interactive 3D Cylindrical Feature Showcase */}
+        {/* SECTION 3 — Cinematic 3D Scroll Story (Detection, Intelligence, Integrity) */}
+        <ExamGuardScrollStory />
+
+        {/* SECTION 4 — Interactive 3D Cylindrical Feature Showcase */}
         <ExamGuard3DCarousel />
 
-        {/* SECTION 4 — University Innovation Showcase: Where Innovation Meets Technology */}
+        {/* SECTION 5 — University Innovation Showcase: Where Innovation Meets Technology */}
         <UniversityShowcaseSection />
 
-        {/* SECTION 5 — From Examination to Integrity Review */}
+        {/* SECTION 6 — From Examination to Integrity Review */}
         <HowItWorksSection />
 
-        {/* SECTION 6 — Role Experience Showcase */}
+        {/* SECTION 7 — Role Experience Showcase */}
         <ProductShowcaseSection />
 
-        {/* SECTION 7 — Core Capabilities */}
+        {/* SECTION 8 — Core Capabilities */}
         <FeaturesSection />
 
-        {/* SECTION 8 — Privacy and Trust */}
+        {/* SECTION 9 — Privacy and Trust */}
         <PrivacySection />
       </main>
 
-      {/* SECTION 9 — Compact Footer */}
+      {/* SECTION 10 — Compact Footer */}
       <CompactFooter />
     </div>
   );

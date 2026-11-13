@@ -1,0 +1,54 @@
+/* AI ExamGuard Cinematic 3D Scroll Story Styles */
+
+.cinematic-scroll-container {
+  position: relative;
+  width: 100%;
+  background-color: var(--background);
+}
+
+.cinematic-viewport-sticky {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background-color: var(--background);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Studio Ambient Light Overlay */
+.cinematic-lighting-ambient {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    65% 55% at 50% 50%,
+    color-mix(in oklab, var(--primary) 4%, transparent) 0%,
+    transparent 85%
+  );
+}
+
+/* Subtle Architectural Grid */
+.cinematic-grid-subtle {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--primary) 3.5%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--primary) 3.5%, transparent) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, #000 40%, transparent 100%);
+  opacity: 0.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cinematic-viewport-sticky {
+    position: relative;
+    height: auto;
+    min-height: 80vh;
+  }
+}
+
