@@ -48,3 +48,4 @@ Following the root-cause fixes:
 - **Persistence Latency:** Local storage write latency: **< 1ms**.
 - **Batch Flush Interval:** 140ms debounce for keystrokes; 15ms immediate flush on question navigation or blur.
 - **Offline Resilience:** Failed network requests automatically transition save status to `queued` with exponential backoff retry. Zero answers lost.
+
