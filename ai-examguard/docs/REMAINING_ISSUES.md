@@ -30,4 +30,3 @@ Following this audit and optimization cycle, **there are zero critical, high, or
 ### 2.3 Sentry / OpenTelemetry Error Monitoring Integration
 - **Current State:** Error boundaries in `app/error.tsx`, `app/global-error.tsx`, and `app/(dashboard)/error.tsx` log sanitized diagnostic traces to console without leaking user credentials or answer keys.
 - **Recommendation:** Connect an institutional Sentry or OpenTelemetry DSN in `.env.local` for remote real-time exception aggregation across university campuses.
-

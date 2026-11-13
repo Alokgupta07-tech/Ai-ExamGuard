@@ -54,4 +54,3 @@
 | **Warning System** | 20s cooldown, separate technical vs misconduct | `warning-engine.ts` unit verification | Pass |
 | **3D Cinematic Scene** | Procedural morph across 3 scenes & 4 viewports | `scripts/test-cinematic-scroll.mjs` CDP | Pass |
 | **Error Handling** | Root, global, and dashboard error boundaries | `app/error.tsx`, `global-error.tsx`, `dashboard/error.tsx` | Pass |
-
