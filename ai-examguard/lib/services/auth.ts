@@ -138,16 +138,21 @@ export class AuthService {
       targetId = user.id;
     }
 
-    let { data: profile, error: pError } = await this.supabase
+    const { data: dbProfile, error: pError } = await this.supabase
       .from('profiles')
       .select('*')
       .eq('id', targetId)
       .maybeSingle();
 
-    if (!profile) {
+    if (pError) {
+      console.warn('Profile lookup returned error, falling back to user metadata:', pError.message);
+    }
+
+    let activeProfile = dbProfile;
+    if (!activeProfile) {
       const { data: { user } } = await this.supabase.auth.getUser();
       if (!user || user.id !== targetId) return null;
-      profile = {
+      activeProfile = {
         id: user.id,
         email: user.email || '',
         full_name: (user.user_metadata?.full_name as string) || user.email?.split('@')[0] || 'User',
@@ -201,7 +206,7 @@ export class AuthService {
     };
 
     return {
-      ...profile,
+      ...activeProfile,
       memberships: formattedMemberships,
       activeRole,
       activeTenant,

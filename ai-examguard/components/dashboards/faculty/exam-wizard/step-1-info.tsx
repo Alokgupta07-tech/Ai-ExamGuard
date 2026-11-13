@@ -66,20 +66,25 @@ export function Step1Info({ courses, exam, onSaved }: Step1InfoProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  const prevExamIdRef = useRef<string | null>(null);
+
   // Sync ref values when an existing exam is loaded asynchronously
   useEffect(() => {
-    if (exam) {
+    if (exam && exam.id !== prevExamIdRef.current) {
+      prevExamIdRef.current = exam.id;
       if (titleRef.current) titleRef.current.value = exam.title || '';
       if (descRef.current) descRef.current.value = exam.description || '';
       if (instRef.current) instRef.current.value = exam.instructions || '';
-      if (exam.courseId) setCourseId(exam.courseId);
-      if (exam.startTime) {
-        setExamDate(toLocalDateInput(exam.startTime));
-        setStartTimeOfDay(toLocalTimeInput(exam.startTime));
-      }
-      if (exam.endTime) {
-        setEndTimeOfDay(toLocalTimeInput(exam.endTime));
-      }
+      queueMicrotask(() => {
+        if (exam.courseId) setCourseId(exam.courseId);
+        if (exam.startTime) {
+          setExamDate(toLocalDateInput(exam.startTime));
+          setStartTimeOfDay(toLocalTimeInput(exam.startTime));
+        }
+        if (exam.endTime) {
+          setEndTimeOfDay(toLocalTimeInput(exam.endTime));
+        }
+      });
     }
   }, [exam]);
 

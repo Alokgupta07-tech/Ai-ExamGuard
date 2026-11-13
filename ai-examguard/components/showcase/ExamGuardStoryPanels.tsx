@@ -110,7 +110,7 @@ export function ExamGuardStoryPanels({ progress }: ExamGuardStoryPanelsProps) {
 
         {/* Phase Step Counter */}
         <div className="flex items-center gap-3">
-          {PANELS.map((panel, idx) => {
+          {PANELS.map((panel) => {
             const active =
               progress >= panel.startP && progress <= panel.endP;
             return (

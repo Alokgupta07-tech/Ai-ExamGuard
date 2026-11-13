@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { AlertTriangle, ArrowLeft, Loader2, ShieldAlert, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/shared/modal';
@@ -13,9 +12,6 @@ import { QuestionNavigator } from '@/components/exam/question-navigator';
 import { QuestionStage } from '@/components/exam/question-stage';
 import { ExamBottomBar } from '@/components/exam/exam-bottom-bar';
 import { SubmissionConfirmation } from '@/components/exam/submission-confirmation';
-import { CameraMonitorPanel } from '@/components/proctoring/camera-monitor-panel';
-import { AudioMonitorPanel } from '@/components/proctoring/audio-monitor-panel';
-import { BrowserMonitorStatus } from '@/components/proctoring/browser-monitor-status';
 import { UnifiedProctorPanel } from '@/components/proctoring/unified-proctor-panel';
 import { useCameraProctor } from '@/hooks/use-camera-proctor';
 import { useAudioProctor } from '@/hooks/use-audio-proctor';
@@ -71,11 +67,14 @@ function writeOutbox(
 }
 
 export function ExamTakingWorkspace({ examId }: { examId: string }) {
-  const prefersReducedMotion = useReducedMotion();
   const [bootstrapping, setBootstrapping] = useState(true);
   const [bootstrapError, setBootstrapError] = useState<string | null>(null);
 
   const [paper, setPaper] = useState<StudentExamPaper | null>(null);
+  const paperRef = useRef<StudentExamPaper | null>(null);
+  useEffect(() => {
+    paperRef.current = paper;
+  }, [paper]);
   const [session, setSession] = useState<ActiveExamSessionState | null>(null);
   const [receipt, setReceipt] = useState<ExamSubmissionReceipt | null>(null);
 
@@ -219,7 +218,7 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
 
       const pendingAnswers = Array.from(pendingQueueRef.current.entries()).map(
         ([questionId, val]) => {
-          const q = paper?.questions.find((item) => item.id === questionId);
+          const q = paperRef.current?.questions.find((item) => item.id === questionId);
           const isDescriptive =
             q?.type === 'essay' ||
             q?.type === 'short_answer' ||
@@ -304,7 +303,7 @@ export function ExamTakingWorkspace({ examId }: { examId: string }) {
     // Snapshot entries so newer clicks arriving mid-flight are preserved cleanly
     const snapshot = Array.from(pendingQueueRef.current.entries()).map(
       ([questionId, val]) => {
-        const q = paper?.questions.find((item) => item.id === questionId);
+        const q = paperRef.current?.questions.find((item) => item.id === questionId);
         const isDescriptive =
           q?.type === 'essay' ||
           q?.type === 'short_answer' ||

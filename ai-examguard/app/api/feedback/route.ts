@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     const DEFAULT_TENANT_ID = '55d810b1-0555-43d2-97e2-d4a420b6173e';
 
     let tenantId = DEFAULT_TENANT_ID;
-    let userId = user?.id || null;
+    const userId = user?.id || null;
 
     if (userId) {
       const { data: member } = await supabaseAdmin

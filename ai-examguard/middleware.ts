@@ -34,16 +34,32 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Revalidate auth token server-side
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const path = request.nextUrl.pathname;
   const isProtectedRoute = PROTECTED_ROUTES.some((route) => path.startsWith(route));
   const isAuthRoute = AUTH_ROUTES.some((route) => path.startsWith(route));
 
-  // 1. Unauthenticated users accessing protected routes -> Redirect to login
+  // 1. Fast Path: Public routes (landing page, public assets, healthcheck) bypass remote auth overhead
+  if (!isProtectedRoute && !isAuthRoute) {
+    return response;
+  }
+
+  // 2. Fast Path: Unauthenticated access without Supabase auth cookies redirects immediately without network roundtrip
+  const allCookies = request.cookies.getAll();
+  const hasAuthCookies = allCookies.some(
+    (c) => c.name.startsWith('sb-') && (c.name.includes('auth-token') || c.name.includes('-access-token'))
+  );
+  if (isProtectedRoute && !hasAuthCookies) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirectTo', path);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // 3. Revalidate auth token server-side for protected and auth routes
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Unauthenticated users accessing protected routes -> Redirect to login
   if (!user && isProtectedRoute) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirectTo', path);

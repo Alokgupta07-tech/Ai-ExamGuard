@@ -1,7 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || 'placeholder-service-role-secret';
+const supabaseSecretKey =
+  process.env.SUPABASE_SECRET_KEY ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  'placeholder-service-role-secret';
 
 if (!supabaseUrl || !supabaseSecretKey) {
   // In production, ensure both keys are defined

@@ -1,14 +1,12 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  CheckCircle2,
   Filter,
   Loader2,
   MessageSquare,
   RefreshCw,
   Star,
-  Users,
 } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { StatCard } from '@/components/shared/stat-card';
@@ -31,7 +29,7 @@ export default function AdminFeedbackPage() {
   const [filterRole, setFilterRole] = useState<string>('All');
   const [filterCategory, setFilterCategory] = useState<string>('All');
 
-  const fetchFeedback = async () => {
+  const fetchFeedback = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/feedback');
@@ -44,10 +42,29 @@ export default function AdminFeedbackPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    void fetchFeedback();
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch('/api/feedback');
+        const data = await res.json();
+        if (!cancelled && data.feedback) {
+          setFeedbacks(data.feedback);
+        }
+      } catch {
+        // Graceful fallback
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const filtered = feedbacks.filter((f) => {
@@ -117,6 +134,25 @@ export default function AdminFeedbackPage() {
                 )}
               >
                 {r}
+              </button>
+            ))}
+          </div>
+
+          <div className="hidden sm:flex items-center gap-1.5 pl-3 border-l border-border">
+            <span className="text-xs font-semibold text-foreground">Category:</span>
+            {['All', 'AI Proctoring', 'Exam Creation', 'UX & Performance'].map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setFilterCategory(c)}
+                className={cn(
+                  'px-2 py-0.5 rounded text-[11px] font-medium border transition-colors',
+                  filterCategory === c
+                    ? 'border-primary bg-primary/10 text-primary font-semibold'
+                    : 'border-border bg-surface-elevated text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {c}
               </button>
             ))}
           </div>

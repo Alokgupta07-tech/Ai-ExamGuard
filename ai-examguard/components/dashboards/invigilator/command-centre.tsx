@@ -111,7 +111,6 @@ export function InvigilatorCommandCentre({
   // LiveKit WebRTC state for live student surveillance
   const [liveKitToken, setLiveKitToken] = useState<string | null>(null);
   const [liveKitWsUrl, setLiveKitWsUrl] = useState<string | null>(null);
-  const [_liveKitLoading, setLiveKitLoading] = useState(false);
 
   // Communication & Announcement state
   const [announcementText, setAnnouncementText] = useState('');
@@ -123,7 +122,6 @@ export function InvigilatorCommandCentre({
   React.useEffect(() => {
     if (!effectiveExamId) return;
     let cancelled = false;
-    setLiveKitLoading(true);
 
     fetch('/api/monitoring/livekit/token', {
       method: 'POST',
@@ -140,10 +138,7 @@ export function InvigilatorCommandCentre({
           setLiveKitWsUrl(json.wsUrl);
         }
       })
-      .catch(() => undefined)
-      .finally(() => {
-        if (!cancelled) setLiveKitLoading(false);
-      });
+      .catch(() => undefined);
 
     return () => {
       cancelled = true;

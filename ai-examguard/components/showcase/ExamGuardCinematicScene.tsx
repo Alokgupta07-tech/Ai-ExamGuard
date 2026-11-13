@@ -38,9 +38,16 @@ export function ExamGuardCinematicScene({
   const mountRef = useRef<HTMLDivElement | null>(null);
   const targetProgressRef = useRef<number>(progress);
   const currentProgressRef = useRef<number>(progress);
+  const isPausedRef = useRef<boolean>(isPaused);
 
-  // Sync latest target progress without triggering React re-renders
-  targetProgressRef.current = progress;
+  // Sync latest target progress in effect to avoid render-phase ref mutations
+  useEffect(() => {
+    targetProgressRef.current = progress;
+  }, [progress]);
+
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
 
   // Mouse tilt refs
   const targetTiltXRef = useRef<number>(0);
@@ -148,6 +155,11 @@ export function ExamGuardCinematicScene({
 
     const animate = () => {
       if (!running) return;
+
+      if (isPausedRef.current) {
+        rafId = requestAnimationFrame(animate);
+        return;
+      }
 
       const elapsedTime = clock.getElapsedTime();
 

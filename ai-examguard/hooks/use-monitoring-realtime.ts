@@ -78,7 +78,7 @@ export function useMonitoringRealtime({
 
     const channel = supabase
       .channel(`monitoring:tenant:${tenantId}`)
-      .on('broadcast', { event: 'monitoring_event' }, ({ payload }) => {
+      .on('broadcast', { event: 'monitoring_event' }, ({ payload }: { payload: any }) => {
         const p = (payload ?? {}) as Record<string, unknown>
         scheduleRefresh({
           eventId: typeof p.eventId === 'string' ? p.eventId : undefined,
@@ -95,7 +95,7 @@ export function useMonitoringRealtime({
           table: 'proctor_events',
           filter: `tenant_id=eq.${tenantId}`,
         },
-        (payload) => {
+        (payload: any) => {
           const row = (payload.new ?? {}) as Record<string, unknown>
           scheduleRefresh({
             eventId: typeof row.id === 'string' ? row.id : undefined,
@@ -134,7 +134,7 @@ export function useMonitoringRealtime({
           })
         }
       )
-      .subscribe((status) => {
+      .subscribe((status: string) => {
         if (!active) return
         if (status === 'SUBSCRIBED') {
           setConnectionStatus('live')

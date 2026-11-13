@@ -38,13 +38,17 @@ export function LiveKitPublisher({
 
   useEffect(() => {
     if (!enabled) {
-      setConnectionStatus('idle')
-      setTokenData(null)
+      queueMicrotask(() => {
+        setConnectionStatus('idle')
+        setTokenData(null)
+      })
       return
     }
 
     let cancelled = false
-    setConnectionStatus('authorizing')
+    queueMicrotask(() => {
+      if (!cancelled) setConnectionStatus('authorizing')
+    })
 
     const acquireToken = async () => {
       try {

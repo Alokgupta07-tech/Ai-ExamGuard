@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { ArrowRight, Loader2, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import { ExamGuardStoryPanels } from './ExamGuardStoryPanels';
 import './examguard-cinematic.css';
 
@@ -97,6 +97,8 @@ export function ExamGuardScrollStory() {
     };
   }, [prefersReducedMotion]);
 
+  const [isOffscreen, setIsOffscreen] = useState(false);
+
   // Pause rendering when outside the viewport
   useEffect(() => {
     const el = containerRef.current;
@@ -107,6 +109,7 @@ export function ExamGuardScrollStory() {
         const entry = entries[0];
         if (entry) {
           isVisibleRef.current = entry.isIntersecting;
+          setIsOffscreen(!entry.isIntersecting);
         }
       },
       { threshold: 0.05 }
@@ -207,7 +210,7 @@ export function ExamGuardScrollStory() {
         <div className="cinematic-grid-subtle" />
 
         {/* Real Procedural 3D WebGL Canvas Scene */}
-        <ExamGuardCinematicScene progress={progress} />
+        <ExamGuardCinematicScene progress={progress} isPaused={isOffscreen} />
 
         {/* Overlay HTML Cinematic Typography Panels */}
         <ExamGuardStoryPanels progress={progress} />
